@@ -19,6 +19,14 @@ Formulario de acceso con ejemplos de identificación y credenciales de laborator
 
 <img src="docs/evidencias/01-inicio-sesion.png" alt="Inicio de sesión de CIVIS con campos de identificación, contraseña y ayuda de laboratorio" width="280">
 
+### Sesión iniciada con usuario de laboratorio
+
+Acceso realizado desde el Redmi Note 14 con la cuenta ficticia Andrea Morales, documento `1234567890`, fuerza Policía y rol administrador. El panel muestra el saludo del usuario y las opciones de administración, historial, cambio de contraseña y escaneo de documentos.
+
+Para esta evidencia se utilizó el backend CIVIS con el perfil `lab`, una base H2 temporal y conexión por USB al puerto local 8081. La prueba con PostgreSQL y SMTP queda pendiente de configurar esos servicios.
+
+<img src="docs/evidencias/06-sesion-iniciada.png" alt="Sesión iniciada en CIVIS con la cuenta ficticia Andrea Morales y panel de operaciones de Policía" width="280">
+
 ### Registro de funcionario
 
 Instrucciones de autorización previa y formulario con ejemplos de documento, nombres, apellidos, fuerza, rango, ID institucional y correo. Las dos capturas muestran distintas posiciones de desplazamiento de la misma pantalla.
@@ -218,7 +226,7 @@ Invoke-WebRequest -Uri 'http://localhost:8080/api/admin/report.pdf?required=true
 
 La lectura del PDF417 puede incluir campos múltiples: la app no asume que la cadena de código equivale al número de identificación y solicita confirmación manual. En el documento no se especifica el formato binario concreto de la cédula ni credenciales de APIs oficiales.
 
-**Verificación:** `:app:assembleDebug` y `:app:lintDebug` completados correctamente. Las dos pruebas de backend con `mvn test` finalizaron sin fallos. El APK se instaló en un Redmi Note 14 y las pantallas de acceso se documentan en las evidencias anteriores. La comprobación de login y registro desde el teléfono queda pendiente de configurar el backend con PostgreSQL y SMTP.
+**Verificación:** `:app:assembleDebug` y `:app:lintDebug` completados correctamente. Las dos pruebas de backend con `mvn test` finalizaron sin fallos. El APK se instaló en un Redmi Note 14 y se verificó el login con una cuenta ficticia contra el backend de laboratorio con H2 temporal por USB. Las pantallas se documentan en las evidencias anteriores. La comprobación de registro desde el teléfono y la integración con PostgreSQL y SMTP quedan pendientes de configurar esos servicios.
 
 ## Datos de demostración añadidos (10 ciudadanos)
 
