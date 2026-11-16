@@ -7,7 +7,38 @@
 - **database/**: CSV de los 10 ciudadanos ficticios precargados (identificaciones 1000000011–1000000020).
 - **docker-compose.yml**: PostgreSQL y Mailpit.
 
-**Importante**: no es un APK compilado. El código fuente está preparado para abrirse en Android Studio, pero no fue posible ejecutar compilación integral en este entorno por falta de JDK 26, SDK Android y Maven. Tampoco hay conexión con servicios oficiales.
+**Verificación local** realizada el 15 de noviembre de 2026. La app compiló con `:app:assembleDebug`, pasó `:app:lintDebug` y se instaló en un Redmi Note 14. Las dos pruebas del backend pasaron con `mvn test`, usando H2 y correo simulado. El acceso desde el teléfono requiere completar la configuración de PostgreSQL, correo y URL del servidor.
+
+## Evidencias de la aplicación
+
+Capturas reales de CIVIS en un Redmi Note 14, tomadas el 15 de noviembre de 2026. Los ejemplos visibles corresponden al entorno de laboratorio.
+
+### Inicio de sesión
+
+Formulario de acceso con ejemplos de identificación y credenciales de laboratorio.
+
+<img src="docs/evidencias/01-inicio-sesion.png" alt="Inicio de sesión de CIVIS con campos de identificación, contraseña y ayuda de laboratorio" width="280">
+
+### Registro de funcionario
+
+Instrucciones de autorización previa y formulario con ejemplos de documento, nombres, apellidos, fuerza, rango, ID institucional y correo. Las dos capturas muestran distintas posiciones de desplazamiento de la misma pantalla.
+
+<p>
+  <img src="docs/evidencias/02-registro-ayuda.png" alt="Registro de funcionario con instrucciones y datos ficticios autorizados para laboratorio" width="280">
+  <img src="docs/evidencias/03-registro-formulario.png" alt="Campos del formulario de registro con ejemplos y selectores de fuerza y rango" width="280">
+</p>
+
+### Recuperación de acceso
+
+Solicitud de contraseña temporal mediante el documento del funcionario registrado.
+
+<img src="docs/evidencias/04-recuperar-acceso.png" alt="Pantalla de recuperación de acceso con identificación y botón para solicitar recuperación" width="280">
+
+### Configuración del servidor
+
+Dirección de ejemplo, instrucciones para teléfono y emulador, y botón para comprobar la conexión con CIVIS.
+
+<img src="docs/evidencias/05-configuracion-servidor.png" alt="Configuración de la URL del servidor con ayuda de red y botón Comprobar conexión" width="280">
 
 ## Inicio rápido en Windows 11
 
@@ -179,7 +210,7 @@ Invoke-WebRequest -Uri 'http://localhost:8080/api/admin/report.pdf?required=true
 - ✅ Módulo de seguridad: tokens, contraseñas BCrypt y permisos ADMIN/OFFICER.
 - ✅ Gestión de ciudadanos vía API y reporte PDF filtrado (aún sin UI administrativa).
 - ⚠️ No hay proveedor autorizado de antecedentes ni padrón real; se necesita convenio/acceso oficial para integración.
-- ⚠️ Falta prueba de compilación, pruebas instrumentadas y endurecimiento de seguridad para producción.
+- ⚠️ Quedan pendientes las pruebas instrumentadas y el endurecimiento de seguridad para producción.
 
 ## Seguridad / limitaciones
 
@@ -187,7 +218,7 @@ Invoke-WebRequest -Uri 'http://localhost:8080/api/admin/report.pdf?required=true
 
 La lectura del PDF417 puede incluir campos múltiples: la app no asume que la cadena de código equivale al número de identificación y solicita confirmación manual. En el documento no se especifica el formato binario concreto de la cédula ni credenciales de APIs oficiales.
 
-**Verificación:** la integración ha sido preparada y auditada de forma estática; no se ejecutaron compilación Android ni pruebas de backend sobre JDK 26 en este contenedor por falta de SDK Android, Maven y Java 26. Debes confirmar con los comandos anteriores y compartir el primer error si aparece.
+**Verificación:** `:app:assembleDebug` y `:app:lintDebug` completados correctamente. Las dos pruebas de backend con `mvn test` finalizaron sin fallos. El APK se instaló en un Redmi Note 14 y las pantallas de acceso se documentan en las evidencias anteriores. La comprobación de login y registro desde el teléfono queda pendiente de configurar el backend con PostgreSQL y SMTP.
 
 ## Datos de demostración añadidos (10 ciudadanos)
 
