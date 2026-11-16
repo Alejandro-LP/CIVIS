@@ -1,0 +1,27 @@
+# Build outputs and local tooling
+**/build/
+**/target/
+**/.gradle/
+**/.kotlin/
+**/.idea/
+*.iml
+**/local.properties
+*.log
+
+# Credentials, signing keys and local configuration
+.env
+.env.*
+!.env.example
+**/.env
+**/.env.*
+!**/.env.example
+*.jks
+*.keystore
+*.p12
+*.pem
+**/data/
+
+# Operating system files
+.DS_Store
+Thumbs.db
+Desktop.ini
