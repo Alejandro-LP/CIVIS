@@ -1,6 +1,7 @@
+param([string]$BaseUrl = 'http://localhost:8081')
 # Ejecutar después de levantar PostgreSQL/Mailpit y el backend.
 $ErrorActionPreference = 'Stop'
-$base = 'http://localhost:8080'
+$base = $BaseUrl.TrimEnd('/')
 Write-Host '1/4 Salud del servidor'
 Invoke-RestMethod "$base/api/health" | Format-List
 Write-Host '2/4 Inicio de sesión con cuenta DEMO'

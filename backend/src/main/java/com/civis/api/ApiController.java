@@ -39,7 +39,7 @@ public class ApiController {
   LookupAudit a=new LookupAudit();a.officerId=officer.id;a.citizenId=id;a.outcome=outcome;a.occurredAt=Instant.now();audit.save(a);
   return new LookupResult(id,outcome,c.map(x->x.firstName+" "+x.lastName).orElse(""),demo,demo?"Resultado en entorno de demostración, no constituye antecedente judicial oficial.":"Resultado del registro interno CIVIS. No acredita antecedentes de una fuente oficial.",Instant.now());
  }
- // La administración se ofrece solo como API, sin construir una web adicional.
+ // El portal web y Android comparten los mismos controles de permisos en la API.
  @PostMapping("/admin/citizens") public ResponseEntity<Map<String,String>> save(@RequestHeader("Authorization") String token,@Valid @RequestBody CitizenInput in){
   auth.requireAdmin(auth.require(token));
   if(in.birthDate()!=null && in.issueDate()!=null && in.issueDate().isBefore(in.birthDate()))throw new ResponseStatusException(HttpStatus.BAD_REQUEST,"La expedición no puede ser anterior al nacimiento");

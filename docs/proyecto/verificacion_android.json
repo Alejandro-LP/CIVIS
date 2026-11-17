@@ -1,0 +1,9 @@
+{
+  "datos": "Cuenta ficticia de laboratorio",
+  "fecha": "2026-11-17",
+  "restauracion_tras_reinicio": true,
+  "cifrado_keystore": "APROBADO",
+  "login": "APROBADO",
+  "entorno": "Redmi Note 14 y backend PostgreSQL por USB",
+  "clave_texto_claro_ausente": true
+}

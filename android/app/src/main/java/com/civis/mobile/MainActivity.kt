@@ -56,6 +56,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         val preferences = getSharedPreferences("civis_local", MODE_PRIVATE)
         val api = CivisApi()
+        val secureCredentials = SecureCredentials(this)
         setContent {
             var demoMode by remember { mutableStateOf(true) }
             CivisTheme(demoMode) {
@@ -63,6 +64,8 @@ class MainActivity : ComponentActivity() {
                 var page by remember { mutableStateOf("login") }
                 var serverUrl by remember { mutableStateOf(preferences.getString("server_url", "http://192.168.1.100:8080").orEmpty()) }
                 api.baseUrl = serverUrl
+                var credentialsRevision by remember { mutableStateOf(0) }
+                val rememberedCredentials = remember(serverUrl, credentialsRevision) { secureCredentials.read(serverUrl) }
                 var currentUser by remember { mutableStateOf<Officer?>(null) }
                 var token by remember { mutableStateOf("") }
                 var enteredId by remember { mutableStateOf("") }
@@ -100,7 +103,7 @@ class MainActivity : ComponentActivity() {
                     }
                 }
                 when (page) {
-                    "login" -> LoginScreen(preferences.getString("remembered", "").orEmpty(), onLogin = { id, pass, remember ->
+                    "login" -> LoginScreen(rememberedCredentials?.first ?: preferences.getString("remembered", "").orEmpty(), rememberedCredentials?.second.orEmpty(), onLogin = { id, pass, remember ->
                         alertIsError = true
                         busy = true; alert = ""
                         scope.launch {
@@ -108,6 +111,13 @@ class MainActivity : ComponentActivity() {
                                 val response = withContext(Dispatchers.IO) { api.login(id, pass) }
                                 token = response.first; currentUser = response.second;demoMode=api.demoMode
                                 preferences.edit().putString("remembered", if(remember) id else "").apply()
+                                if (remember) {
+                                    runCatching { secureCredentials.save(serverUrl, id, pass) }
+                                        .onFailure { secureCredentials.clear() }
+                                } else {
+                                    secureCredentials.clear()
+                                }
+                                credentialsRevision++
                                 page = "home"
                             } catch(e: Exception) { alert = e.message ?: "Error de autenticación" }
                             busy = false
@@ -150,7 +160,7 @@ class MainActivity : ComponentActivity() {
                     }, busy = busy, message = alert)
                     "manage" -> ManagementScreen(api,token,currentUser!!.id,onBack={page="home"})
                     "history" -> HistoryScreen(api,token,onBack={page="home"})
-                    "password" -> PasswordScreen(api,token,onBack={page="home"},onChanged={token="";currentUser=null;alert="Contraseña actualizada. Inicia sesión con tu nueva contraseña.";page="login"})
+                    "password" -> PasswordScreen(api,token,onBack={page="home"},onChanged={secureCredentials.clear();credentialsRevision++;token="";currentUser=null;alert="Contraseña actualizada. Inicia sesión con tu nueva contraseña.";page="login"})
                     "home" -> HomeScreen(currentUser!!, onScan = {
                         scannerError = ""
                         val options = GmsBarcodeScannerOptions.Builder().setBarcodeFormats(Barcode.FORMAT_PDF417, Barcode.FORMAT_QR_CODE, Barcode.FORMAT_CODE_128).enableAutoZoom().build()
@@ -166,6 +176,9 @@ class MainActivity : ComponentActivity() {
                     } }
                     "result" -> ResultScreen(enteredId, pendingResult ?: Lookup.Missing, onBack = { page = "consult" }, onNew = { scannedValue = ""; page = "consult" })
                     "profile" -> ProfileScreen(currentUser!!, onBack = { page = "home" }, onExit = {
+                        secureCredentials.clear()
+                        credentialsRevision++
+                        preferences.edit().remove("remembered").apply()
                         val logoutToken=token; scope.launch { try { withContext(Dispatchers.IO){ api.logout(logoutToken) } } catch(_:Exception) {} }
                         token=""; currentUser=null; page="login"
                     })
@@ -309,13 +322,13 @@ private fun Screen(
 }
 
 @Composable private fun LoginScreen(
-    saved: String, onLogin: (String, String, Boolean) -> Unit,
+    saved: String, savedPassword: String, onLogin: (String, String, Boolean) -> Unit,
     onRegister: () -> Unit, onRecover: () -> Unit, busy: Boolean,
     networkError: String, messageIsError: Boolean, serverUrl: String, onServerUrl: (String)->Unit,
     onCheckServer: () -> Unit
 ) {
     var id by remember(saved) { mutableStateOf(saved) }
-    var password by remember { mutableStateOf("") }
+    var password by remember(savedPassword) { mutableStateOf(savedPassword) }
     var remember by remember { mutableStateOf(saved.isNotBlank()) }
     var error by remember { mutableStateOf("") }
     var showServer by remember { mutableStateOf(false) }
@@ -338,7 +351,7 @@ private fun Screen(
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Checkbox(checked = remember, onCheckedChange = {remember = it},
                     colors = CheckboxDefaults.colors(checkedColor = Olive))
-                Text("Recordar identificación", fontSize = 12.sp, color = Ink)
+                Text("Recordar contraseña en este dispositivo", fontSize = 12.sp, color = Ink)
             }
             Spacer(Modifier.height(9.dp))
             if (error.isNotBlank()) Hint(error, true)

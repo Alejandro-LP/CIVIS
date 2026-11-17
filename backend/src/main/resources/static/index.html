@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <title>CIVIS | Registro ciudadano</title>
+  <link rel="stylesheet" href="/styles.css">
+  <script src="/app.js" type="module"></script>
+</head>
+<body>
+  <a class="skip-link" href="#main">Ir al contenido</a>
+  <section id="login" class="login-layout">
+    <div class="login-intro">
+      <div class="brand">civis<span>.</span></div>
+      <p class="eyebrow">SISTEMA DE REGISTRO CIUDADANO</p>
+      <h1>La información ciudadana,<br>en un solo lugar.</h1>
+      <p>Administra el registro, autoriza al personal y consulta la trazabilidad de las verificaciones realizadas desde el móvil.</p>
+      <div class="intro-footer">Proyecto académico · Ingeniería de Software I<br>Fundación Universitaria Konrad Lorenz</div>
+    </div>
+    <main class="login-main" id="main">
+      <form id="login-form" class="login-card">
+        <p class="eyebrow">PORTAL ADMINISTRATIVO</p>
+        <h2>Bienvenido a CIVIS</h2>
+        <p class="muted">Ingresa con tu cuenta de administrador.</p>
+        <label>Identificación<input name="identification" inputmode="numeric" pattern="[0-9]{6,12}" maxlength="12" autocomplete="username" placeholder="Ej. 1234567890" required></label>
+        <label>Contraseña<input name="password" type="password" autocomplete="current-password" required></label>
+        <p id="login-error" role="alert" class="error" hidden></p>
+        <button type="submit" class="primary">Iniciar sesión <span aria-hidden="true">→</span></button>
+        <p id="lab-login" class="notice" hidden>Laboratorio activo. Cuenta ficticia <strong>1234567890</strong>, contraseña <strong>Demo123</strong>.</p>
+        <p class="small muted">El administrador habilita el registro de funcionarios desde la sección Autorizaciones.</p>
+      </form>
+    </main>
+  </section>
+
+  <div id="workspace" class="workspace" hidden>
+    <aside class="sidebar">
+      <div class="brand">civis<span>.</span></div>
+      <p class="sidebar-caption">REGISTRO CIUDADANO</p>
+      <nav aria-label="Navegación principal">
+        <button data-view="summary" class="active">Resumen</button>
+        <button data-view="citizens">Ciudadanos</button>
+        <button data-view="officers">Funcionarios</button>
+        <button data-view="registry">Autorizaciones</button>
+        <button data-view="audit">Auditoría</button>
+        <button data-view="reports">Reportes PDF</button>
+      </nav>
+      <div class="sidebar-bottom"><p id="actor-name"></p><p class="small muted">Administrador</p><button id="logout" class="secondary">Cerrar sesión</button></div>
+    </aside>
+    <div class="workspace-body">
+      <header class="topbar"><span>Gestión institucional</span><span id="environment" class="badge"></span></header>
+      <main id="content" tabindex="-1">
+        <div class="page-heading"><div><p class="eyebrow">CIVIS / ADMINISTRACIÓN</p><h1 id="view-title">Resumen</h1><p class="muted" id="view-description"></p></div><button id="refresh" class="secondary">Actualizar</button></div>
+        <p id="global-message" role="status" hidden></p>
+        <div id="view-body" aria-live="polite"></div>
+      </main>
+      <footer>Registro académico de laboratorio. Los estados corresponden a los datos registrados en CIVIS.</footer>
+    </div>
+  </div>
+  <dialog id="editor" aria-labelledby="editor-title">
+    <form id="editor-form">
+      <div class="dialog-heading"><h2 id="editor-title"></h2><button type="button" id="close-editor" aria-label="Cerrar formulario" class="icon-button">×</button></div>
+      <div id="editor-fields" class="form-grid"></div>
+      <p class="error" id="editor-error" role="alert" hidden></p>
+      <div class="dialog-actions"><button type="button" id="cancel-editor" class="secondary">Cancelar</button><button type="submit" class="primary">Guardar cambios</button></div>
+    </form>
+  </dialog>
+  <dialog id="confirmation" aria-labelledby="confirmation-title">
+    <h2 id="confirmation-title">Eliminar ciudadano</h2><p id="confirmation-text"></p>
+    <p class="error" id="delete-error" hidden role="alert"></p>
+    <div class="dialog-actions"><button id="cancel-delete" class="secondary">Cancelar</button><button id="confirm-delete" class="danger-button">Eliminar registro</button></div>
+  </dialog>
+</body>
+</html>

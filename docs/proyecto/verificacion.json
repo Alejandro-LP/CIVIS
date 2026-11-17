@@ -1,0 +1,120 @@
+{
+  "fecha_utc": "2026-11-17T06:38:05.017892+00:00",
+  "entorno": "PostgreSQL 18 local aislado y SMTP local de captura",
+  "base": "http://127.0.0.1:8082",
+  "casos_aprobados": 27,
+  "casos": [
+    {
+      "caso": "API de laboratorio activa",
+      "resultado": "APROBADO"
+    },
+    {
+      "caso": "Portal Spring MVC disponible",
+      "resultado": "APROBADO"
+    },
+    {
+      "caso": "Estilos y JavaScript disponibles",
+      "resultado": "APROBADO"
+    },
+    {
+      "caso": "API protege datos sin sesión válida",
+      "resultado": "APROBADO"
+    },
+    {
+      "caso": "Credenciales incorrectas rechazadas",
+      "resultado": "APROBADO"
+    },
+    {
+      "caso": "Login de administrador",
+      "resultado": "APROBADO"
+    },
+    {
+      "caso": "Registro rechaza datos institucionales que no coinciden",
+      "resultado": "APROBADO"
+    },
+    {
+      "caso": "Registro entrega correo SMTP real al receptor local",
+      "resultado": "APROBADO"
+    },
+    {
+      "caso": "Contraseña temporal de seis caracteres con mayúscula minúscula y número",
+      "resultado": "APROBADO"
+    },
+    {
+      "caso": "Login del funcionario recién registrado",
+      "resultado": "APROBADO"
+    },
+    {
+      "caso": "Registro duplicado rechazado",
+      "resultado": "APROBADO"
+    },
+    {
+      "caso": "Perfil funcionario sin permisos administrativos",
+      "resultado": "APROBADO"
+    },
+    {
+      "caso": "Alta ciudadana conserva los once campos solicitados",
+      "resultado": "APROBADO"
+    },
+    {
+      "caso": "Expedición anterior al nacimiento rechazada",
+      "resultado": "APROBADO"
+    },
+    {
+      "caso": "Consulta devuelve estado requerido y nombre desde PostgreSQL",
+      "resultado": "APROBADO"
+    },
+    {
+      "caso": "Actualización se refleja en consulta móvil REST",
+      "resultado": "APROBADO"
+    },
+    {
+      "caso": "Documento ausente devuelve SIN_DATOS",
+      "resultado": "APROBADO"
+    },
+    {
+      "caso": "PDF filtrado conserva nombres largos y caracteres españoles",
+      "resultado": "APROBADO"
+    },
+    {
+      "caso": "PDF aplica filtro requerido",
+      "resultado": "APROBADO"
+    },
+    {
+      "caso": "Historial del funcionario conserva sus consultas",
+      "resultado": "APROBADO"
+    },
+    {
+      "caso": "Auditoría administrativa registra al funcionario",
+      "resultado": "APROBADO"
+    },
+    {
+      "caso": "Recuperación por SMTP revoca la sesión anterior",
+      "resultado": "APROBADO"
+    },
+    {
+      "caso": "Cambio de contraseña revoca sesiones y admite la nueva clave",
+      "resultado": "APROBADO"
+    },
+    {
+      "caso": "Desactivar funcionario revoca acceso",
+      "resultado": "APROBADO"
+    },
+    {
+      "caso": "Administrador conserva sus propios permisos",
+      "resultado": "APROBADO"
+    },
+    {
+      "caso": "Eliminación de ciudadano",
+      "resultado": "APROBADO"
+    },
+    {
+      "caso": "Cerrar sesión revoca el token",
+      "resultado": "APROBADO"
+    }
+  ],
+  "limites": [
+    "La cámara PDF417 requiere verificación en un teléfono con Google Play Services",
+    "La fuente institucional se representa mediante un padrón académico autorizado"
+  ]
+}

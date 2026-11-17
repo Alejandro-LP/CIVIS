@@ -28,6 +28,10 @@ class ApplicationFlowTest {
   var matcher=Pattern.compile("\"token\":\"([^\"]+)\"").matcher(response.body());assertTrue(matcher.find());return matcher.group(1);
  }
  @Test void completeFlowAndAccessIsolation() throws Exception {
+  var portal=client.send(HttpRequest.newBuilder(URI.create("http://localhost:"+port+"/")).build(),HttpResponse.BodyHandlers.ofString());
+  assertEquals(200,portal.statusCode());
+  assertTrue(portal.body().contains("PORTAL ADMINISTRATIVO"));
+  assertTrue(portal.headers().firstValue("Content-Security-Policy").orElse("").contains("frame-ancestors 'none'"));
   assertEquals(401,call("GET","/auth/me",null,"invalid").statusCode());
   String admin=login("1234567890","Demo123");
   var authorization="{\"identification\":\"9000000077\",\"force\":\"Policía\",\"rank\":\"Patrullero\",\"forceId\":\"POL-TEST77\",\"email\":\"test77@civis.test\",\"active\":true}";

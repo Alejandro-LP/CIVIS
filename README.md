@@ -1,239 +1,126 @@
-# CIVIS · Edición Minimal Militar (Kotlin + Java 26 + PostgreSQL)
+# CIVIS Sistema de consulta ciudadana
 
-## Qué contiene esta entrega
+Entrega académica de Ingeniería de Software I para la Fundación Universitaria Konrad Lorenz. Incluye portal web, aplicación Android y API REST con PostgreSQL, Hibernate y Tomcat.
 
-- **android/**: aplicación Android en Kotlin/Jetpack Compose, completamente rediseñada con verde militar, superficies blancas y minimalismo. Incluye login, registro con fuerza/rango dinámico, recuperación, home, lector de código de barras, consulta por identificación, resultado con nombre obtenido de la base de datos y perfil.
-- **backend/**: API REST en Java 26/Spring Boot, PostgreSQL con JPA/Hibernate, usuarios, validación institucional **simulada**, contraseñas BCrypt, sesiones, auditoría, PDF administrativo y SMTP de laboratorio.
-- **database/**: CSV de los 10 ciudadanos ficticios precargados (identificaciones 1000000011–1000000020).
-- **docker-compose.yml**: PostgreSQL y Mailpit.
+**Líder del proyecto y líder técnico:** Jorge Alejandro López Páez.
 
-**Verificación local** realizada el 15 de noviembre de 2026. La app compiló con `:app:assembleDebug`, pasó `:app:lintDebug` y se instaló en un Redmi Note 14. Las dos pruebas del backend pasaron con `mvn test`, usando H2 y correo simulado. El acceso desde el teléfono requiere completar la configuración de PostgreSQL, correo y URL del servidor.
+**Equipo:** David Santiago Guerrero Tolosa, Daniel Felipe Bejarano Perez y Juan Sebastian Romo Sanabria.
+
+La distribución de responsabilidades y la planeación se presentan como una simulación académica. Las pruebas y capturas corresponden a verificaciones realizadas sobre la implementación.
+
+## Iniciar el laboratorio
+
+Requiere JDK 26, Maven 3.9+, Docker Desktop activo y Android Studio con SDK 36 para compilar el móvil.
+
+```powershell
+$env:JAVA_HOME='C:\Program Files\Java\jdk-26.0.1'
+$env:DB_PASSWORD='<elige una contraseña local>'
+.\iniciar-laboratorio.ps1
+```
+
+El script inicia PostgreSQL y Mailpit, compila la API y deja el backend ejecutándose en la terminal. Para usar un JAR ya compilado, añade `-OmitirCompilacion`. Conserva la misma `DB_PASSWORD` cuando reinicies una base existente.
+
+- Portal administrativo en `http://localhost:8081`.
+- Estado de la API en `http://localhost:8081/api/health`.
+- Correo de laboratorio en `http://localhost:8025`.
+- PostgreSQL de Docker en `localhost:5433` para evitar conflictos con instalaciones locales. `DB_PORT` permite cambiarlo.
+
+En laboratorio, el administrador ficticio usa documento `1234567890` y contraseña `Demo123`. El perfil `lab` habilita estas cuentas y datos. El modo predeterminado del backend requiere configurar un administrador propio para una base vacía.
+
+En Android Studio abre **la carpeta `android`**, sincroniza y ejecuta `app`. En un teléfono usa `http://IP_DEL_PC:8081` en la misma Wi-Fi. En el emulador utiliza `http://10.0.2.2:8081`. Para USB puedes ejecutar `adb reverse tcp:8081 tcp:8081` y configurar `http://127.0.0.1:8081`.
+
+## Funcionalidad
+
+El portal web administra las fichas completas de ciudadanos, sus estados, las autorizaciones institucionales y los permisos de funcionarios. Incluye búsqueda, filtros, auditoría paginada y descarga de PDF.
+
+Android permite registro autorizado con correo y contraseña temporal, login, recuerdo opcional de contraseña cifrada con Android Keystore, recuperación, consulta manual y lectura de códigos con Google Code Scanner. El operador confirma el documento antes de consultar. Las respuestas distinguen `REQUERIDO`, `NO_REQUERIDO` y `SIN_DATOS`.
+
+La API centraliza las reglas y valida los roles `ADMIN` y `OFFICER`. Guarda contraseñas con BCrypt y hashes de los tokens de sesión. La recuperación, el cambio de clave, el cierre de sesión y la modificación de permisos revocan sesiones.
+
+## Registro de ejemplo
+
+El administrador debe autorizar previamente documento, fuerza, rango, ID y correo. El laboratorio incluye esta autorización ficticia.
+
+- Documento `1111111111`.
+- Nombres `Juan Carlos` y apellidos `Pérez Gómez`.
+- Fuerza `Policía` y rango `Patrullero`.
+- ID institucional `POL-101` y correo `funcionario@civis.test`.
+
+La clave temporal llega al buzón de Mailpit del PC. Si el documento ya está registrado, utiliza recuperación de acceso. Los ciudadanos ficticios `1000000011` a `1000000020` permiten probar consultas. Los dos identificadores originales `1000000001` y `1000000002` se conservan por compatibilidad.
+
+## Documentación y presentación
+
+- [Informe de dirección y diseño](docs/proyecto/01_Informe_del_proyecto.md) con alcance, equipo, planeación, trazabilidad, arquitectura, seguridad, pruebas y riesgos.
+- [Manual de uso y despliegue](docs/proyecto/02_Manual_de_uso_y_despliegue.md).
+- [Guion del líder y preparación de la sustentación](docs/proyecto/03_Guion_del_lider_y_sustentacion.md).
+- [Diagramas editables de arquitectura, datos y secuencia](docs/proyecto/diagramas.md).
+- [Documentos Word, PDF y presentación PowerPoint](docs/entrega/).
+- [Resultados de 27 comprobaciones integrales](docs/proyecto/verificacion.json).
+- [Verificación móvil de login y recuerdo cifrado](docs/proyecto/verificacion_android.json).
+
+El paquete local `entrega/CIVIS_Entrega_Completa.zip` reúne fuentes, JAR, APK debug, scripts de base de datos, documentos y evidencias. Esa carpeta se excluye de Git para conservar el repositorio de fuentes y documentación.
 
 ## Evidencias de la aplicación
 
-Capturas reales de CIVIS en un Redmi Note 14, tomadas el 15 de noviembre de 2026. Los ejemplos visibles corresponden al entorno de laboratorio.
+### Portal web
 
-### Inicio de sesión
+Capturas del 17 de noviembre de 2026 con PostgreSQL aislado y datos ficticios. El alta y la edición de la ficha se comprobaron desde el navegador.
 
-Formulario de acceso con ejemplos de identificación y credenciales de laboratorio.
+<p>
+  <img src="docs/evidencias/10-web-resumen.jpg" alt="Resumen del portal web de CIVIS" width="560">
+  <img src="docs/evidencias/08-web-ficha.jpg" alt="Ficha ciudadana web después de guardar y reabrir el registro" width="560">
+</p>
 
-<img src="docs/evidencias/01-inicio-sesion.png" alt="Inicio de sesión de CIVIS con campos de identificación, contraseña y ayuda de laboratorio" width="280">
+<p>
+  <img src="docs/evidencias/07-web-ciudadanos.jpg" alt="Listado web de ciudadanos" width="560">
+  <img src="docs/evidencias/09-web-reportes.jpg" alt="Generación de reporte PDF filtrado desde el portal" width="560">
+</p>
+
+### Inicio de sesión y registro móvil
+
+Las primeras capturas muestran la versión de laboratorio del 15 de noviembre de 2026. La última evidencia documenta la versión del 17 de noviembre con la contraseña cifrada recuperada después de reiniciar la app.
+
+<p>
+  <img src="docs/evidencias/01-inicio-sesion.png" alt="Login de CIVIS con ayudas de laboratorio" width="260">
+  <img src="docs/evidencias/02-registro-ayuda.png" alt="Instrucciones y ejemplo de registro autorizado" width="260">
+  <img src="docs/evidencias/03-registro-formulario.png" alt="Formulario móvil de registro" width="260">
+</p>
 
 ### Sesión iniciada con usuario de laboratorio
 
-Acceso realizado desde el Redmi Note 14 con la cuenta ficticia Andrea Morales, documento `1234567890`, fuerza Policía y rol administrador. El panel muestra el saludo del usuario y las opciones de administración, historial, cambio de contraseña y escaneo de documentos.
-
-Para esta evidencia se utilizó el backend CIVIS con el perfil `lab`, una base H2 temporal y conexión por USB al puerto local 8081. La prueba con PostgreSQL y SMTP queda pendiente de configurar esos servicios.
-
-<img src="docs/evidencias/06-sesion-iniciada.png" alt="Sesión iniciada en CIVIS con la cuenta ficticia Andrea Morales y panel de operaciones de Policía" width="280">
-
-### Registro de funcionario
-
-Instrucciones de autorización previa y formulario con ejemplos de documento, nombres, apellidos, fuerza, rango, ID institucional y correo. Las dos capturas muestran distintas posiciones de desplazamiento de la misma pantalla.
+La cuenta ficticia Andrea Morales corresponde al documento `1234567890`, fuerza Policía y perfil administrador. La captura original utilizó un backend de laboratorio con H2 temporal por USB. El 17 de noviembre también se verificó login móvil contra PostgreSQL, cifrado Keystore y restauración después del reinicio.
 
 <p>
-  <img src="docs/evidencias/02-registro-ayuda.png" alt="Registro de funcionario con instrucciones y datos ficticios autorizados para laboratorio" width="280">
-  <img src="docs/evidencias/03-registro-formulario.png" alt="Campos del formulario de registro con ejemplos y selectores de fuerza y rango" width="280">
+  <img src="docs/evidencias/06-sesion-iniciada.png" alt="Sesión iniciada con Andrea y panel de operaciones" width="260">
+  <img src="docs/evidencias/11-android-recordar-acceso.png" alt="Credenciales de laboratorio recordadas y enmascaradas después de reiniciar Android" width="260">
 </p>
 
-### Recuperación de acceso
+### Recuperación y servidor
 
-Solicitud de contraseña temporal mediante el documento del funcionario registrado.
+<p>
+  <img src="docs/evidencias/04-recuperar-acceso.png" alt="Recuperar acceso desde Android" width="260">
+  <img src="docs/evidencias/05-configuracion-servidor.png" alt="Configuración del servidor y comprobación de conexión" width="260">
+</p>
 
-<img src="docs/evidencias/04-recuperar-acceso.png" alt="Pantalla de recuperación de acceso con identificación y botón para solicitar recuperación" width="280">
+La captura histórica de configuración muestra el puerto 8080. El script actual inicia CIVIS en 8081. La verificación aislada de entrega utilizó 8082.
 
-### Configuración del servidor
+## Base de datos y compilación
 
-Dirección de ejemplo, instrucciones para teléfono y emulador, y botón para comprobar la conexión con CIVIS.
-
-<img src="docs/evidencias/05-configuracion-servidor.png" alt="Configuración de la URL del servidor con ayuda de red y botón Comprobar conexión" width="280">
-
-## Inicio rápido en Windows 11
-
-1. Abre Docker Desktop. En PowerShell, desde esta carpeta, configura `$env:DB_PASSWORD='<tu contraseña local>'` y ejecuta `docker compose up -d`. Usa esa misma variable en la terminal del backend.
-2. Comprueba que `java -version` indique Java 26, que `mvn -version` esté disponible y ejecuta `cd backend; mvn spring-boot:run`.
-3. En el PC abre `http://localhost:8080/api/health` para confirmar que responde la API.
-4. En Android Studio selecciona **File > Open** y abre **únicamente la carpeta `android`** (dentro está `settings.gradle.kts`). En terminal de esa carpeta ejecuta `powershell -ExecutionPolicy Bypass -File .\preparar-gradle.ps1` si faltan `gradlew.bat` y `gradle-wrapper.jar`. El script requiere conexión a Internet.
-5. Selecciona JDK 26 como *Gradle JDK*, sincroniza, elige la configuración `app` y el Redmi Note 14; pulsa **Run**. El código móvil se compila con objetivo JVM 17 por compatibilidad de Android, aunque Gradle corre con Java 26.
-6. PC y teléfono deben compartir la misma Wi-Fi. En el login pulsa **Configurar servidor API**, introduce `http://IP_DE_TU_PC:8080` (obtén la IPv4 de Windows con `ipconfig`) y usa `1234567890` / `Demo123`.
-7. Consulta `1000000011` a `1000000020`, datos totalmente ficticios precargados automáticamente en PostgreSQL cuando está activo `DEMO_MODE=true`.
-
-**Si aparece error de instalación por USB en Xiaomi**: habilita `Instalar vía USB` en las opciones de desarrollador. El servidor debe estar arrancado para que el inicio de sesión funcione.
-
-## Cambios con respecto a CIVIS v2
-
-- Nueva identidad visual **Olive / Military Green** en *todas* las pantallas.
-- Diseño sin azules, sin gradientes y sin Glassmorphism: componentes más sobrios, consistentes y accesibles.
-- La consulta `GET /api/citizens/{id}/status` ahora incluye el campo `name` cuando existe un ciudadano ficticio. La aplicación muestra ese nombre real **de la base demo**, no un nombre local inventado. El resto de campos de la respuesta se preserva.
-- Los estados siguen siendo `REQUERIDO`, `NO_REQUERIDO` y `SIN_DATOS` y están rotulados como demostración.
-
-## Alcance y limitaciones
-
-Todos los datos de ciudadanos y funcionarios provienen de un entorno de laboratorio; no usarlos para decisiones reales. No introduzcas identificaciones reales. La app requiere un backend ejecutándose en tu computadora; no funciona de forma autónoma sin red. El escaneo PDF417 exige que un operador confirme el número de identificación. El módulo administrativo está expuesto mediante endpoints REST, **no** mediante una interfaz web. En producción haría falta HTTPS, control institucional verificado, endurecimiento de seguridad, migraciones y pruebas.
-
----
-
-## Documentación técnica de la versión base
-
-# CIVIS v2 — Android Kotlin + Java 26 + PostgreSQL
-
-Este proyecto amplía la app móvil anterior y agrega un backend REST y una base de datos real. **CIVIS no está conectado a sistemas oficiales**. Es un proyecto académico con funcionarios y ciudadanos ficticios.
-
-## Arquitectura
-
-```text
-Redmi Note 14 (app Android Kotlin / Jetpack Compose)
-    |  HTTP en LAN de laboratorio / HTTPS al desplegar
-    v
-Servidor Java 26 (Spring Boot 4.0.9, API REST)
-    |                  |
-    v                  v
-PostgreSQL 17        Mailpit SMTP (correo de prueba)
-    |
-    +-- officers: usuarios, hash BCrypt, perfil y rol
-    +-- defense_registry: padrón simulado de validación
-    +-- citizens: datos generales + estado requerido/no requerido
-    +-- auth_sessions: tokens con hash SHA-256 y expiración
-    +-- lookup_audit: trazabilidad de consultas
-```
-
-**Importante sobre Java 26 y Android:** el backend usa código fuente Java 26 y Gradle para Android se ejecuta con JDK 26. La app móvil está escrita en Kotlin y genera bytecode JVM 17 compatible con Android, porque los teléfonos Android no ejecutan directamente Java SE 26. No afirmamos que el APK sea bytecode Java 26.
-
-## Preparación en Windows 11
-
-Requisitos: Android Studio con SDK 36, JDK 26, Maven 3.9+, Docker Desktop con motor activo, teléfono y PC en **la misma red Wi-Fi**.
-
-### A. Levantar PostgreSQL + correo de prueba
-
-Abre PowerShell en la carpeta principal (`CIVIS_FULLSTACK_JAVA26`):
+`database/01_schema.sql` crea tablas e índices en PostgreSQL. `02_demo_citizens.sql` carga diez registros ficticios sin sobrescribir los existentes. Docker aplica el esquema solamente al crear un volumen nuevo. La carga de cuentas del perfil `lab` genera los hashes desde Java.
 
 ```powershell
-docker compose up -d
-```
-
-PostgreSQL queda en `localhost:5432`, usuario `civis`, base de datos `civis`. Antes de ejecutar Docker, configura `$env:DB_PASSWORD='<tu contraseña local>'` y conserva la misma variable en la terminal del backend. Mailpit queda en `http://localhost:8025` y recibe los emails enviados a su SMTP local `localhost:1025` **sin enviar ningún correo real a Internet**. No publiques estos puertos.
-
-### B. Iniciar el servidor Java 26
-
-En otra terminal:
-
-```powershell
-java -version  # Debe decir 26
 cd backend
-mvn spring-boot:run
+mvn test package
+cd ..\android
+.\gradlew.bat :app:assembleDebug :app:lintDebug
 ```
 
-> Si `mvn` no existe, instala Apache Maven 3.9+ y vuelve a abrir PowerShell. El archivo `backend/pom.xml` define todas las dependencias.
+La app usa Gradle 9.6.0, AGP 9.2.0 y bytecode JVM 17. El backend usa Java 26. `iniciar-servidor.ps1 -Puerto 8081` permite ejecutar el JAR con servicios existentes configurados mediante `DB_URL`, `DB_USER`, `DB_PASSWORD` y variables `SMTP_*`.
 
-Prueba en el navegador del PC `http://localhost:8080/api/health`; debe devolver `{"status":"UP","demo":true}`. También puedes ejecutar `./probar-api.ps1` desde la carpeta principal para probar acceso y consultas por REST.
+## Verificación y supuestos
 
-### C. Averiguar IP del PC
+Se aprobaron 27 casos contra PostgreSQL 18 aislado y un receptor SMTP local, incluyendo entrega de contraseña, login, perfiles, CRUD, auditoría, recuperación y PDF filtrado. Las dos pruebas JUnit y las tareas Android de compilación y lint completaron correctamente. La opción de recordar contraseña se verificó en un Redmi Note 14 con almacenamiento cifrado y restauración tras reinicio.
 
-En una terminal de Windows ejecuta:
+La consulta institucional se representa mediante el padrón académico `defense_registry`. La guía permite documentar supuestos, cuya aceptación corresponde al profesor. El ensayo de cámara con una cédula física permanece pendiente. Docker Compose propone PostgreSQL 17 y Mailpit, mientras que la verificación local utilizó PostgreSQL 18 y un receptor SMTP de pruebas.
 
-```powershell
-ipconfig
-```
-
-Busca la dirección **IPv4 de tu adaptador Wi-Fi**, por ejemplo `192.168.1.23`. En el móvil NO debes poner `localhost`: `localhost` significa el propio teléfono. El firewall de Windows puede pedir que autorices Java en redes privadas; permite solo **red privada de confianza**.
-
-### D. Abrir Android en Android Studio
-
-1. Desde Android Studio, **File > Open > android** (la carpeta que contiene `settings.gradle.kts`).
-2. Dentro de `android`, ejecuta una sola vez:
-
-```powershell
-powershell -ExecutionPolicy Bypass -File .\preparar-gradle.ps1
-.\gradlew.bat :app:assembleDebug
-```
-
-3. Configura **Gradle JDK = JDK 26**, sincroniza y selecciona `app` + tu Redmi Note 14.
-4. Pulsa **Run**. En la pantalla de login CIVIS, cambia el campo **Servidor API** a `http://IP_DEL_PC:8080` (ejemplo `http://192.168.1.23:8080`). Guarda la URL simplemente editando el campo. PC y móvil deben compartir red.
-
-El HTTP sin TLS está permitido **solo en la compilación debug** mediante `android/app/src/debug/AndroidManifest.xml`. La compilación release lo bloquea: usa HTTPS para un despliegue real.
-
-### Credenciales y consultas ficticias
-
-- Identificación: `1234567890`
-- Contraseña: `Demo123`
-- Tipo de usuario demo: `ADMIN` (para probar API de gestión, **no para producción**)
-- `1000000001`: NO REQUERIDO (ficticio)
-- `1000000002`: REQUERIDO (ficticio)
-- Otros documentos: SIN_DATOS.
-
-El usuario de demostración se crea **solo** con `DEMO_MODE=true`. Se ejecuta contra PostgreSQL, no contra un Map o almacenamiento en memoria en Android.
-
-### Registro con validación en el padrón simulado
-
-El backend carga un registro **ficticio** de funcionario autorizado (exclusivamente para pruebas):
-
-| Campo | Valor |
-|---|---|
-| Identificación | `1111111111` |
-| Nombre | Puedes registrar nombres y apellidos de prueba |
-| Fuerza | `Policía` |
-| Rango | `Patrullero` |
-| ID Fuerza | `POL-101` |
-| Correo | `funcionario@civis.test` |
-
-Cuando el usuario se registra, el backend coteja identificación, fuerza, rango, ID y correo con `defense_registry`. Si coinciden, genera una contraseña temporal de **6 caracteres**, que incluye mayúscula, minúscula y número, almacena solo un **hash BCrypt** y envía un mensaje a **Mailpit**. Lee el correo en `http://localhost:8025`. Esto simula la verificación institucional; **no existe integración con una base real de Defensa**.
-
-La recuperación envía otro correo de prueba sin revelar si la identificación existe. La app permite iniciar sesión y consultar con un token de sesión temporal. La sesión se conserva **solo en memoria** en el teléfono y se elimina al cerrar la app; la identificación recordada y la URL se guardan en preferencias, pero la contraseña nunca se guarda.
-
-## API REST
-
-| Método | Ruta | Uso / permiso |
-|---|---|---|
-| GET | `/api/health` | Salud del servidor |
-| POST | `/api/auth/register` | Registro con padrón simulado + Mailpit |
-| POST | `/api/auth/login` | Inicio de sesión; devuelve token y perfil |
-| POST | `/api/auth/recover` | Recuperación por correo |
-| POST | `/api/auth/change-password` | Cambio de clave; requiere token |
-| POST | `/api/auth/logout` | Revoca sesión |
-| GET | `/api/auth/me` | Datos del usuario autenticado |
-| GET | `/api/citizens/{id}/status` | Consulta autentificada y registro de auditoría |
-| POST | `/api/admin/citizens` | Alta o actualización de ciudadanos; rol ADMIN |
-| GET | `/api/admin/citizens?required=true` | Reporte filtrado JSON; rol ADMIN |
-| GET | `/api/admin/report.pdf?required=true` | Reporte PDF filtrado; rol ADMIN |
-
-La administración se hace **por REST, no mediante una interfaz web**, para respetar que el encargo inicial era solo la parte móvil. Si te piden una interfaz administrativa web, aún falta desarrollarla.
-
-**Ejemplo para generar reporte PDF en PowerShell:**
-
-```powershell
-$login = Invoke-RestMethod -Uri http://localhost:8080/api/auth/login -Method Post -ContentType 'application/json' -Body '{"identification":"1234567890","password":"Demo123"}'
-Invoke-WebRequest -Uri 'http://localhost:8080/api/admin/report.pdf?required=true' -Headers @{Authorization="Bearer $($login.token)"} -OutFile ./reporte-civis.pdf
-```
-
-## Cobertura del documento del profesor
-
-- ✅ App nativa Android, Kotlin + Jetpack Compose.
-- ✅ Registro de funcionario con los campos exigidos y fuerza/rango dependientes.
-- ✅ Validación mediante tabla de padrón **simulada**, no fuente oficial de Defensa.
-- ✅ Contraseña temporal de 6 caracteres, remitida a buzón SMTP local en pruebas.
-- ✅ Login, recordatorio de identificación y recuperación vía correo de pruebas.
-- ✅ Escáner de código de barras y consulta por identificación confirmada por operador.
-- ✅ Resultado requerido/no requerido (datos **ficticios** de PostgreSQL).
-- ✅ API REST, PostgreSQL y JPA/Hibernate (ORM), servidor Tomcat embebido.
-- ✅ Módulo de seguridad: tokens, contraseñas BCrypt y permisos ADMIN/OFFICER.
-- ✅ Gestión de ciudadanos vía API y reporte PDF filtrado (aún sin UI administrativa).
-- ⚠️ No hay proveedor autorizado de antecedentes ni padrón real; se necesita convenio/acceso oficial para integración.
-- ⚠️ Quedan pendientes las pruebas instrumentadas y el endurecimiento de seguridad para producción.
-
-## Seguridad / limitaciones
-
-**Proyecto SOLO para laboratorio.** Los datos de ejemplo no son judiciales y los usuarios son inventados. `DEMO_MODE=true`, credenciales por defecto, HTTP local y sincronización JPA `ddl-auto=update` son apropiados únicamente para práctica. En producción: `DEMO_MODE=false`, HTTPS obligatorio, credenciales de DB secretas y rotadas, migraciones Flyway, control institucional de acceso, auditoría inmutable, gestión de secretos, protección frente a intentos de login, eliminación/retención de datos y pruebas externas. **No despliegues esta versión para consultas oficiales.**
-
-La lectura del PDF417 puede incluir campos múltiples: la app no asume que la cadena de código equivale al número de identificación y solicita confirmación manual. En el documento no se especifica el formato binario concreto de la cédula ni credenciales de APIs oficiales.
-
-**Verificación:** `:app:assembleDebug` y `:app:lintDebug` completados correctamente. Las dos pruebas de backend con `mvn test` finalizaron sin fallos. El APK se instaló en un Redmi Note 14 y se verificó el login con una cuenta ficticia contra el backend de laboratorio con H2 temporal por USB. Las pantallas se documentan en las evidencias anteriores. La comprobación de registro desde el teléfono y la integración con PostgreSQL y SMTP quedan pendientes de configurar esos servicios.
-
-## Datos de demostración añadidos (10 ciudadanos)
-
-Esta edición incluye **10 ciudadanos totalmente ficticios** precargados por `backend/src/main/java/com/civis/api/DemoData.java` al arrancar el backend con `DEMO_MODE=true`. Se guardan en PostgreSQL mediante JPA/Hibernate, no solo en el celular. Los IDs para consultar son **1000000011 a 1000000020**. Hay 4 registros marcados REQUERIDO y 6 NO REQUERIDO; estas etiquetas son **datos simulados**, sin relación con antecedentes reales.
-
-También se incluye `database/ciudadanos_ficticios_10.csv` para visualizar los datos. Los 2 IDs originales (1000000001 y 1000000002) siguen funcionando, así que una base nueva tendrá 12 ciudadanos de demostración.
-
-**Carga automática:** no necesitas ejecutar SQL manualmente. Si el backend ya está funcionando, reinícialo (`Ctrl+C`, luego `mvn spring-boot:run`). El cargador comprueba si cada identificación existe antes de insertarla, por lo que no duplica ni sobrescribe registros. No borra los datos ya existentes. Confirma su presencia con `SELECT document_id, first_name, last_name, required FROM citizens ORDER BY document_id;` en PostgreSQL.
-
-**Aviso:** solo para exposición académica. No introduzcas cédulas verdaderas ni afirmes que estos estados son oficiales.
+Los estados proceden del registro ficticio o interno de CIVIS. Una integración institucional requiere proveedor autorizado, credenciales, HTTPS y políticas operativas. Para uso interno sin datos ficticios, utiliza una base separada, omite el perfil de laboratorio y configura `CIVIS_ADMIN_ID`, `CIVIS_ADMIN_EMAIL` y `CIVIS_ADMIN_PASSWORD`.
