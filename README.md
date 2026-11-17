@@ -2,11 +2,18 @@
 
 Entrega académica de Ingeniería de Software I para la Fundación Universitaria Konrad Lorenz. Incluye portal web, aplicación Android y API REST con PostgreSQL, Hibernate y Tomcat.
 
-**Líder del proyecto y líder técnico:** Jorge Alejandro López Páez.
+**Equipo:** Jorge Alejandro López Páez, David Santiago Guerrero Tolosa, Daniel Felipe Bejarano Perez y Juan Sebastian Romo Sanabria. Los cargos están pendientes de acordarse.
 
-**Equipo:** David Santiago Guerrero Tolosa, Daniel Felipe Bejarano Perez y Juan Sebastian Romo Sanabria.
+## Avance móvil de diez minutos
 
-La distribución de responsabilidades y la planeación se presentan como una simulación académica. Las pruebas y capturas corresponden a verificaciones realizadas sobre la implementación.
+El material para la revisión actual se centra en la app Android y presenta a los cuatro integrantes del equipo.
+
+- [Presentación PowerPoint con ocho diapositivas](docs/avance-movil/CIVIS_Avance_Movil_10min.pptx).
+- [Diapositivas en PDF](docs/avance-movil/CIVIS_Avance_Movil_10min.pdf).
+- [Guion breve para diez minutos](docs/avance-movil/Guion_Avance_Movil_10min.pdf).
+- [Guion ampliado y pasos de la demostración](docs/avance-movil/Guion_10_minutos.md).
+
+La documentación de cierre incluida más adelante corresponde a una propuesta académica simulada. Las pruebas y capturas corresponden a verificaciones realizadas sobre la implementación.
 
 ## Iniciar el laboratorio
 
