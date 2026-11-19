@@ -15,15 +15,16 @@ public class ApiController {
  private final ApiService auth;
  private final CitizenRepository citizens;
  private final LookupAuditRepository audit;
+ private final StatusHistoryRepository statusHistory;
  @Value("${civis.demo-mode:false}") boolean demo;
- ApiController(ApiService auth,CitizenRepository citizens,LookupAuditRepository audit){this.auth=auth;this.citizens=citizens;this.audit=audit;}
+ ApiController(ApiService auth,CitizenRepository citizens,LookupAuditRepository audit,StatusHistoryRepository statusHistory){this.auth=auth;this.citizens=citizens;this.audit=audit;this.statusHistory=statusHistory;}
  public record Register(@NotBlank String identification,@NotBlank String firstName,@NotBlank String lastName,@NotBlank String force,@NotBlank String rank,@NotBlank String forceId,@Email @NotBlank String email) {}
  public record Login(@NotBlank String identification,@NotBlank String password) {}
  public record Recovery(@NotBlank String identification) {}
  public record PasswordChange(@NotBlank String oldPassword,@NotBlank String newPassword) {}
  public record OfficerView(String identification,String firstName,String lastName,String force,String rank,String forceId,String email,String role) {}
  public record LoginResponse(String token,OfficerView officer,boolean demo) {}
- public record LookupResult(String identification,String status,String name,boolean demo,String message,Instant checkedAt) {}
+ public record LookupResult(String status) {}
  public record CitizenInput(@NotBlank @Pattern(regexp="\\d{6,12}") String identification,@NotBlank @Size(max=100) String firstName,@NotBlank @Size(max=100) String lastName,@PastOrPresent LocalDate birthDate,@Size(max=150) String birthPlace,@PastOrPresent LocalDate issueDate,@Size(max=150) String issuePlace,@Pattern(regexp="[+-]") String rh,@Pattern(regexp="A|B|AB|O") String bloodGroup,@Min(40) @Max(250) Integer heightCm,boolean required) {}
  @GetMapping("/health") public Map<String,Object> health(){return Map.of("status","UP","demo",demo);}
  @PostMapping("/auth/register") public ResponseEntity<Map<String,String>> register(@Valid @RequestBody Register request){auth.register(request);return ResponseEntity.status(201).body(Map.of("message","Registro correcto. Revisa tu correo para obtener la contraseña temporal."));}
@@ -32,20 +33,26 @@ public class ApiController {
  @PostMapping("/auth/logout") public void logout(@RequestHeader(value="Authorization",required=false) String token){auth.logout(token);}
  @PostMapping("/auth/change-password") public Map<String,String> change(@RequestHeader("Authorization") String token,@Valid @RequestBody PasswordChange p){auth.changePassword(auth.require(token),p.oldPassword(),p.newPassword());return Map.of("message","Contraseña actualizada");}
  @GetMapping("/auth/me") public OfficerView me(@RequestHeader("Authorization") String token){Officer o=auth.require(token);return new OfficerView(o.id,o.firstName,o.lastName,o.forceName,o.rankName,o.forceId,o.email,o.role);}
- @GetMapping("/citizens/{id}/status") public LookupResult status(@RequestHeader("Authorization") String token,@PathVariable String id){
+ @GetMapping("/citizens/{id}/status") public LookupResult status(@RequestHeader(value="Authorization",required=false) String token,@PathVariable String id){
   Officer officer=auth.require(token);
   if(!id.matches("\\d{6,12}"))throw new ResponseStatusException(HttpStatus.BAD_REQUEST,"Identificación inválida");
   Optional<Citizen> c=citizens.findById(id);String outcome=c.map(x->x.required?"REQUERIDO":"NO_REQUERIDO").orElse("SIN_DATOS");
   LookupAudit a=new LookupAudit();a.officerId=officer.id;a.citizenId=id;a.outcome=outcome;a.occurredAt=Instant.now();audit.save(a);
-  return new LookupResult(id,outcome,c.map(x->x.firstName+" "+x.lastName).orElse(""),demo,demo?"Resultado en entorno de demostración, no constituye antecedente judicial oficial.":"Resultado del registro interno CIVIS. No acredita antecedentes de una fuente oficial.",Instant.now());
+  return new LookupResult(outcome);
  }
  // El portal web y Android comparten los mismos controles de permisos en la API.
+ @org.springframework.transaction.annotation.Transactional
  @PostMapping("/admin/citizens") public ResponseEntity<Map<String,String>> save(@RequestHeader("Authorization") String token,@Valid @RequestBody CitizenInput in){
-  auth.requireAdmin(auth.require(token));
+  Officer actor=auth.require(token);auth.requireAdmin(actor);
   if(in.birthDate()!=null && in.issueDate()!=null && in.issueDate().isBefore(in.birthDate()))throw new ResponseStatusException(HttpStatus.BAD_REQUEST,"La expedición no puede ser anterior al nacimiento");
   Citizen c=citizens.findById(in.identification()).orElseGet(Citizen::new);
+  if(c.required!=in.required()) { StatusHistory h=new StatusHistory();h.officerId=actor.id;h.citizenId=in.identification();h.previousRequired=c.required;h.newRequired=in.required();h.occurredAt=Instant.now();statusHistory.save(h); }
   c.documentId=in.identification();c.firstName=in.firstName();c.lastName=in.lastName();c.birthDate=in.birthDate();c.birthPlace=in.birthPlace();c.issueDate=in.issueDate();c.issuePlace=in.issuePlace();c.rh=in.rh();c.bloodGroup=in.bloodGroup();c.heightCm=in.heightCm();c.required=in.required();citizens.save(c);
   return ResponseEntity.ok(Map.of("message","Ciudadano guardado"));
+ }
+ public record StatusChange(String citizenId,String officerId,boolean previousRequired,boolean newRequired,Instant occurredAt) {}
+ @GetMapping("/admin/status-history") public org.springframework.data.domain.Page<StatusChange> statusHistory(@RequestHeader("Authorization") String token,@RequestParam(defaultValue="0") @Min(0) int page){
+  auth.requireAdmin(auth.require(token));return statusHistory.findAll(org.springframework.data.domain.PageRequest.of(page,30,org.springframework.data.domain.Sort.by(org.springframework.data.domain.Sort.Direction.DESC,"occurredAt","id"))).map(h->new StatusChange(h.citizenId,h.officerId,h.previousRequired,h.newRequired,h.occurredAt));
  }
  @DeleteMapping("/admin/citizens/{id}") public Map<String,String> delete(@RequestHeader("Authorization") String token,@PathVariable String id){
   auth.requireAdmin(auth.require(token));if(!citizens.existsById(id))throw new ResponseStatusException(HttpStatus.NOT_FOUND,"Ciudadano no encontrado");citizens.deleteById(id);return Map.of("message","Ciudadano eliminado");

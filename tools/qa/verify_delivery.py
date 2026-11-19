@@ -97,7 +97,7 @@ def main():
     call("POST", "/api/admin/citizens", {**citizen, "issueDate": "1990-01-01"}, admin, expected=400)
     check("Expedición anterior al nacimiento rechazada", True)
     result = call("GET", f"/api/citizens/{citizen_id}/status", token=officer)
-    check("Consulta devuelve estado requerido y nombre desde PostgreSQL", result["status"] == "REQUERIDO" and "María" in result["name"])
+    check("HU12: consulta devuelve únicamente el estado requerido", result == {"status": "REQUERIDO"})
     call("POST", "/api/admin/citizens", {**citizen, "required": False}, admin)
     check("Actualización se refleja en consulta móvil REST", call("GET", f"/api/citizens/{citizen_id}/status", token=officer)["status"] == "NO_REQUERIDO")
     check("Documento ausente devuelve SIN_DATOS", call("GET", "/api/citizens/999999999999/status", token=officer)["status"] == "SIN_DATOS")

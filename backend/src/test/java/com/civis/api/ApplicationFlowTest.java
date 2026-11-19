@@ -50,7 +50,13 @@ class ApplicationFlowTest {
   var citizen="{\"identification\":\"9000000011\",\"firstName\":\"Ana\",\"lastName\":\"Prueba\",\"required\":true}";
   assertEquals(200,call("POST","/admin/citizens",citizen,admin).statusCode());
   var lookup=call("GET","/citizens/9000000011/status",null,admin);
-  assertTrue(lookup.body().contains("REQUERIDO"),lookup.body());
+  assertEquals(200,lookup.statusCode());
+  assertEquals("{\"status\":\"REQUERIDO\"}",lookup.body());
+  assertEquals(401,call("GET","/citizens/9000000011/status",null,null).statusCode());
+  assertEquals(401,call("GET","/citizens/9000000011/status",null,"invalid").statusCode());
+  assertEquals(200,call("POST","/admin/citizens",citizen.replace("true","false"),admin).statusCode());
+  assertEquals("{\"status\":\"NO_REQUERIDO\"}",call("GET","/citizens/9000000011/status",null,admin).body());
+  assertEquals("{\"status\":\"SIN_DATOS\"}",call("GET","/citizens/999999999999/status",null,admin).body());
   assertTrue(call("GET","/history",null,admin).body().contains("9000000011"));
   assertEquals(200,call("GET","/admin/report.pdf",null,admin).statusCode());
   assertEquals(400,call("POST","/admin/citizens",citizen.replace("9000000011","invalid"),admin).statusCode());

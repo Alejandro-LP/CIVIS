@@ -12,7 +12,7 @@ import java.net.SocketTimeoutException
 import java.net.UnknownHostException
 import java.util.concurrent.TimeUnit
 
-internal data class CitizenLookup(val status: String, val name: String)
+internal data class CitizenLookup(val status: String)
 
 internal class CivisApi {
     var demoMode: Boolean = true
@@ -66,7 +66,7 @@ internal class CivisApi {
     fun recover(id:String) { request("/api/auth/recover","POST",JSONObject().put("identification",id)) }
     fun lookup(token:String,id:String):CitizenLookup {
         val r = request("/api/citizens/$id/status",token=token)
-        return CitizenLookup(r.getString("status"), r.optString("name", ""))
+        return CitizenLookup(r.getString("status"))
     }
     fun logout(token:String) { request("/api/auth/logout","POST",JSONObject(),token) }
     fun changePassword(token:String,old:String,new:String) {

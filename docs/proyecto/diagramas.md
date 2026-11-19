@@ -104,5 +104,5 @@ sequenceDiagram
     D-->>A: Estado registrado o ausencia
     A->>D: Guarda auditoría con usuario y fecha
     A-->>M: REQUERIDO o NO_REQUERIDO o SIN_DATOS
-    M-->>F: Nombre y resultado
+    M-->>F: Únicamente estado o ciudadano no encontrado
 ```
