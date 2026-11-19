@@ -42,3 +42,11 @@ class LookupAudit {
  Instant occurredAt;
  protected LookupAudit() {}
 }
+@Entity @Table(name="status_history")
+class StatusHistory {
+ @Id @GeneratedValue(strategy=GenerationType.IDENTITY) Long id;
+ String officerId, citizenId;
+ boolean previousRequired, newRequired;
+ Instant occurredAt;
+ protected StatusHistory() {}
+}

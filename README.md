@@ -57,6 +57,8 @@ La clave temporal llega al buzón de Mailpit del PC. Si el documento ya está re
 
 ## Documentación y presentación
 
+- [Entrega corregida según HU12 oficial: arquitectura, prototipo, modelo, pruebas y configuración](docs/proyecto/HU12_entrega.md).
+
 - [Informe de dirección y diseño](docs/proyecto/01_Informe_del_proyecto.md) con alcance, equipo, planeación, trazabilidad, arquitectura, seguridad, pruebas y riesgos.
 - [Manual de uso y despliegue](docs/proyecto/02_Manual_de_uso_y_despliegue.md).
 - [Guion del líder y preparación de la sustentación](docs/proyecto/03_Guion_del_lider_y_sustentacion.md).

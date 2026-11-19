@@ -49,7 +49,7 @@ private val rankMap = mapOf(
 )
 
 internal data class Officer(val id: String, val first: String, val last: String, val force: String, val rank: String, val forceId: String, val email: String, val role: String = "OFFICER")
-private sealed interface Lookup { data object Missing : Lookup; data class Result(val required: Boolean, val id: String, val name: String) : Lookup }
+private sealed interface Lookup { data object Missing : Lookup; data class Result(val required: Boolean) : Lookup }
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -68,7 +68,6 @@ class MainActivity : ComponentActivity() {
                 val rememberedCredentials = remember(serverUrl, credentialsRevision) { secureCredentials.read(serverUrl) }
                 var currentUser by remember { mutableStateOf<Officer?>(null) }
                 var token by remember { mutableStateOf("") }
-                var enteredId by remember { mutableStateOf("") }
                 var pendingResult by remember { mutableStateOf<Lookup?>(null) }
                 var scannedValue by remember { mutableStateOf("") }
                 var scannerError by remember { mutableStateOf("") }
@@ -78,14 +77,13 @@ class MainActivity : ComponentActivity() {
                 fun performLookup(value: String) {
                     if(busy) return
                     val lookupId=value.filter(Char::isDigit)
-                    enteredId = lookupId
                     busy = true; alert = ""
                     scope.launch {
                         try {
                             val outcome = withContext(Dispatchers.IO) { api.lookup(token, lookupId) }
                             pendingResult = when(outcome.status) {
-                                "REQUERIDO" -> Lookup.Result(true,enteredId,outcome.name)
-                                "NO_REQUERIDO" -> Lookup.Result(false,enteredId,outcome.name)
+                                "REQUERIDO" -> Lookup.Result(true)
+                                "NO_REQUERIDO" -> Lookup.Result(false)
                                 else -> Lookup.Missing
                             }
                             page = "result"
@@ -174,7 +172,7 @@ class MainActivity : ComponentActivity() {
                         if(alert.isNotBlank()) Hint(alert,true)
                         ConsultScreen(scannedValue, onBack = {page="home"}, onSubmit = ::performLookup)
                     } }
-                    "result" -> ResultScreen(enteredId, pendingResult ?: Lookup.Missing, onBack = { page = "consult" }, onNew = { scannedValue = ""; page = "consult" })
+                    "result" -> ResultScreen(pendingResult ?: Lookup.Missing, onBack = { page = "consult" }, onNew = { scannedValue = ""; page = "consult" })
                     "profile" -> ProfileScreen(currentUser!!, onBack = { page = "home" }, onExit = {
                         secureCredentials.clear()
                         credentialsRevision++
@@ -558,26 +556,12 @@ private fun Screen(
     }
 }
 
-@Composable private fun ResultScreen(id: String, result: Lookup, onBack: () -> Unit, onNew: () -> Unit) {
+@Composable private fun ResultScreen(result: Lookup, onBack: () -> Unit, onNew: () -> Unit) {
     val citizen = result as? Lookup.Result
     val tone = if (citizen == null) Muted else if (citizen.required) Danger else Success
-    val outcome = if (citizen == null) "Sin datos" else if (citizen.required) "Requerido" else "No requerido"
+    val outcome = if (citizen == null) "Ciudadano no encontrado" else if (citizen.required) "Requerido" else "No requerido"
     Screen("Resultado", "Información devuelta por el servidor CIVIS.", onBack) {
         MinimalCard {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Surface(color = OlivePale, shape = RoundedCornerShape(15.dp)) {
-                    Icon(Icons.Rounded.PersonOutline, null, tint = OliveDeep,
-                        modifier = Modifier.padding(15.dp).size(33.dp))
-                }
-                Spacer(Modifier.width(14.dp))
-                Column(Modifier.weight(1f)) {
-                    Text(citizen?.name?.ifBlank {"Identidad sin nombre"} ?: "Sin registro",
-                        color = Ink, fontSize = 18.sp, fontWeight = FontWeight.Bold)
-                    Spacer(Modifier.height(4.dp))
-                    Text("CC $id", color = Muted, fontSize = 13.sp)
-                }
-            }
-            HorizontalDivider(Modifier.padding(vertical = 22.dp), color = Line)
             Text("ESTADO DE CONSULTA", fontSize = 10.sp,
                 letterSpacing = 1.sp, fontWeight = FontWeight.Bold, color = Muted)
             Spacer(Modifier.height(12.dp))
