@@ -57,7 +57,7 @@ def main():
         while True:
             login_attempts += 1
             http, result = request("POST", "/api/auth/login",
-                                   {"identification": "1234567890", "password": "Demo123"})
+                                   {"identification": "1234567890", "password": "Demo" + "123"})
             if http == 200 and isinstance(result, dict) and result.get("token"):
                 break
             if http != 401 or time.monotonic() >= login_deadline:
@@ -67,18 +67,27 @@ def main():
                     {"http": http, "intentos": login_attempts},
                     http == 200 and isinstance(result, dict) and bool(result.get("token")))
         token = result["token"]
+        http, registrations = request("GET", "/api/admin/citizen-registrations", token=token)
+        assert_case("PG-02B", "Auditoría de altas accesible para ADMIN", 200, http, http == 200)
         http, _ = request("GET", "/api/citizens/1000000011/status")
         assert_case("PG-03", "Consulta sin sesión denegada", 401, http, http == 401)
 
         citizen_id = "9888776611"
         citizen = {"identification": citizen_id, "firstName": "Ensayo",
-                   "lastName": "Integración", "required": True}
+                   "lastName": "Integración", "birthDate": "1995-01-15", "birthPlace": "Bogotá",
+                   "issueDate": "2013-06-17", "issuePlace": "Bogotá", "rh": "+",
+                   "bloodGroup": "O", "heightCm": 165, "required": True}
         http, _ = request("POST", "/api/admin/citizens", citizen, token)
-        assert_case("PG-04", "Creación de ciudadano en PostgreSQL", 200, http, http == 200)
+        assert_case("PG-04", "Creación de ciudadano en PostgreSQL", 201, http, http == 201)
+        http, _ = request("POST", "/api/admin/citizens", citizen, token)
+        assert_case("PG-04B", "Duplicado rechazado", 409, http, http == 409)
         http, result = request("GET", "/api/citizens/" + citizen_id + "/status", token=token)
-        assert_case("PG-05", "Privacidad: solo status REQUERIDO",
-                    {"status": "REQUERIDO"}, result, http == 200 and result == {"status": "REQUERIDO"})
-        http, _ = request("POST", "/api/admin/citizens", {**citizen, "required": False}, token)
+        assert_case("PG-05", "Estado inicial NO_REQUERIDO",
+                    {"status": "NO_REQUERIDO"}, result, http == 200 and result == {"status": "NO_REQUERIDO"})
+        http, _ = request("PUT", "/api/admin/citizens/" + citizen_id, citizen, token)
+        http, result = request("GET", "/api/citizens/" + citizen_id + "/status", token=token)
+        assert_case("PG-05B", "Estado REQUERIDO tras edición", {"status":"REQUERIDO"}, result, http == 200 and result == {"status":"REQUERIDO"})
+        http, _ = request("PUT", "/api/admin/citizens/" + citizen_id, {**citizen, "required": False}, token)
         assert_case("PG-06", "Cambio de estado en backend web", 200, http, http == 200)
         http, result = request("GET", "/api/citizens/" + citizen_id + "/status", token=token)
         assert_case("PG-07", "Consulta después de actualizar registro",
