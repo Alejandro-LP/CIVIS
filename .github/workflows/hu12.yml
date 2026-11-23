@@ -2,6 +2,8 @@ name: CIVIS - Verificacion HU12
 on:
   pull_request:
     branches: [main]
+  push:
+    branches: [main]
   workflow_dispatch:
 permissions:
   contents: read
@@ -22,6 +24,57 @@ jobs:
         with:
           name: resultados-junit-hu12
           path: backend/target/surefire-reports/
+  integration-postgres:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_DB: civis
+          POSTGRES_USER: civis
+          POSTGRES_PASSWORD: civis_ci_only
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U civis -d civis"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
+    env:
+      DB_URL: jdbc:postgresql://localhost:5432/civis
+      DB_USER: civis
+      DB_PASSWORD: civis_ci_only
+      DEMO_MODE: 'true'
+      DDL_AUTO: update
+      PORT: '8080'
+      SMTP_HOST: localhost
+      SMTP_PORT: '1025'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '26'
+          cache: maven
+      - name: Compilar API
+        working-directory: backend
+        run: mvn -B -DskipTests package
+      - name: Iniciar API sobre PostgreSQL real
+        working-directory: backend
+        run: |
+          nohup java -jar target/civis-api-2.0.0.jar > ../civis-api-ci.log 2>&1 &
+          echo $! > ../civis-api-ci.pid
+      - name: Probar flujo HU12 y guardar evidencias
+        run: python3 tools/qa/verify_hu12_postgres.py --output evidencias-ci/hu12-postgresql.json
+      - name: Guardar log y reporte incluso si falla
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: hu12-postgresql-evidencias
+          if-no-files-found: warn
+          path: |
+            evidencias-ci/
+            civis-api-ci.log
   android:
     runs-on: ubuntu-latest
     steps:
