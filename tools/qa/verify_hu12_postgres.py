@@ -49,9 +49,23 @@ def main():
             raise RuntimeError("La API no inició en PostgreSQL: revisar civis-api-ci.log")
 
         assert_case("PG-01", "Salud de la API conectada a PostgreSQL", 200, http, http == 200)
-        http, result = request("POST", "/api/auth/login",
-                               {"identification": "1234567890", "password": "Demo123"})
-        assert_case("PG-02", "Autenticación de laboratorio", 200, http, http == 200 and "token" in result)
+        # /api/health can report UP before CommandLineRunner finishes seeding
+        # the laboratory account. Retry only during startup; fail definitively
+        # if the expected credentials cannot authenticate after the deadline.
+        login_deadline = time.monotonic() + 45
+        login_attempts = 0
+        while True:
+            login_attempts += 1
+            http, result = request("POST", "/api/auth/login",
+                                   {"identification": "1234567890", "password": "Demo123"})
+            if http == 200 and isinstance(result, dict) and result.get("token"):
+                break
+            if http != 401 or time.monotonic() >= login_deadline:
+                break
+            time.sleep(2)
+        assert_case("PG-02", "Autenticación de laboratorio tras inicialización", 200,
+                    {"http": http, "intentos": login_attempts},
+                    http == 200 and isinstance(result, dict) and bool(result.get("token")))
         token = result["token"]
         http, _ = request("GET", "/api/citizens/1000000011/status")
         assert_case("PG-03", "Consulta sin sesión denegada", 401, http, http == 401)
