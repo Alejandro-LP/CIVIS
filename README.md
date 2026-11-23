@@ -36,6 +36,10 @@ En laboratorio, el administrador ficticio usa documento `1234567890` y contrase�
 
 En Android Studio abre **la carpeta `android`**, sincroniza y ejecuta `app`. En un teléfono usa `http://IP_DEL_PC:8081` en la misma Wi-Fi. En el emulador utiliza `http://10.0.2.2:8081`. Para USB puedes ejecutar `adb reverse tcp:8081 tcp:8081` y configurar `http://127.0.0.1:8081`.
 
+## HU3: registro ciudadano
+
+El alta se realiza con POST /api/admin/citizens (201) y diez campos obligatorios; el estado inicial siempre es No requerido. Para editar usar PUT /api/admin/citizens/{id}; los duplicados devuelven 409. La auditoría de altas se consulta en GET /api/admin/citizen-registrations.
+
 ## Funcionalidad
 
 El portal web administra las fichas completas de ciudadanos, sus estados, las autorizaciones institucionales y los permisos de funcionarios. Incluye búsqueda, filtros, auditoría paginada y descarga de PDF.
