@@ -16,7 +16,7 @@ internal data class CitizenLookup(val status: String)
 
 internal class CivisApi {
     var demoMode: Boolean = true
-    var baseUrl: String = "http://192.168.1.100:8080"
+    var baseUrl: String = "http://10.0.2.2:8081"
     private val client = OkHttpClient.Builder().connectTimeout(8, TimeUnit.SECONDS).readTimeout(12, TimeUnit.SECONDS).build()
     private val jsonType = "application/json; charset=utf-8".toMediaType()
     private fun request(path: String, method: String = "GET", data: JSONObject? = null, token: String? = null): JSONObject {
@@ -25,7 +25,7 @@ internal class CivisApi {
         val builder = try {
             Request.Builder().url(url)
         } catch (e: IllegalArgumentException) {
-            throw IOException("La dirección del servidor no es válida. Ejemplo de formato: http://192.168.1.100:8080", e)
+            throw IOException("La dirección del servidor no es válida. Ejemplo de formato: http://10.0.2.2:8081", e)
         }
         if(token != null) builder.header("Authorization","Bearer $token")
         if(method != "GET") builder.method(method, (data ?: JSONObject()).toString().toRequestBody(jsonType))

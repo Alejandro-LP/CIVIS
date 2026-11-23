@@ -62,7 +62,7 @@ class MainActivity : ComponentActivity() {
             CivisTheme(demoMode) {
                 val scope = rememberCoroutineScope()
                 var page by remember { mutableStateOf("login") }
-                var serverUrl by remember { mutableStateOf(preferences.getString("server_url", "http://192.168.1.100:8080").orEmpty()) }
+                var serverUrl by remember { mutableStateOf(preferences.getString("server_url", "http://10.0.2.2:8081").orEmpty()) }
                 api.baseUrl = serverUrl
                 var credentialsRevision by remember { mutableStateOf(0) }
                 val rememberedCredentials = remember(serverUrl, credentialsRevision) { secureCredentials.read(serverUrl) }
@@ -376,8 +376,8 @@ private fun Screen(
         if (showServer) {
             Spacer(Modifier.height(8.dp))
             Field("URL del servidor (IP de tu PC)", serverUrl, onServerUrl,
-                "Ej. http://192.168.1.100:8080")
-            Hint("En teléfono, escribe la IP real del PC conectado a la misma Wi-Fi. En el emulador de Android Studio, usa http://10.0.2.2:8080. El servidor CIVIS debe estar encendido. Ajusta el puerto si usa otro.")
+                "Ej. http://10.0.2.2:8081")
+            Hint("En teléfono, escribe la IP real del PC conectado a la misma Wi-Fi. En el emulador de Android Studio, usa http://10.0.2.2:8081. El servidor CIVIS debe estar encendido. Ajusta el puerto si usa otro.")
             MainButton(if (busy) "Comprobando…" else "Comprobar conexión", onCheckServer, enabled = !busy)
         }
         Spacer(Modifier.height(8.dp))
