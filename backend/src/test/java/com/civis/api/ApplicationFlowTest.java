@@ -50,6 +50,9 @@ class ApplicationFlowTest {
   var citizen="{\"identification\":\"9000000011\",\"firstName\":\"Ana\",\"lastName\":\"Prueba\",\"birthDate\":\"1995-01-15\",\"birthPlace\":\"Bogotá\",\"issueDate\":\"2013-06-17\",\"issuePlace\":\"Bogotá\",\"rh\":\"+\",\"bloodGroup\":\"O\",\"heightCm\":165,\"required\":true}";
   assertEquals(201,call("POST","/admin/citizens",citizen,admin).statusCode());
   assertEquals(409,call("POST","/admin/citizens",citizen,admin).statusCode());
+  assertTrue(call("GET","/admin/citizen-registrations",null,admin).body().contains("9000000011"));
+  assertEquals(400,call("POST","/admin/citizens",citizen.replace("2013-06-17","1990-01-01"),admin).statusCode());
+  assertEquals(400,call("POST","/admin/citizens",citizen.replace("\"heightCm\":165,",""),admin).statusCode());
   var lookup=call("GET","/citizens/9000000011/status",null,admin);
   assertEquals(200,lookup.statusCode());
   assertEquals("{\"status\":\"NO_REQUERIDO\"}",lookup.body());
