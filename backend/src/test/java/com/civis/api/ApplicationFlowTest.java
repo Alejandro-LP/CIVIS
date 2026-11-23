@@ -64,6 +64,17 @@ class ApplicationFlowTest {
   String officer=login(o.id,"Officer12345");
   assertEquals(403,call("GET","/admin/officers",null,officer).statusCode());
   assertFalse(call("GET","/history",null,officer).body().contains("9000000011"));
+  assertEquals(403,call("POST","/admin/citizens",citizen,officer).statusCode());
+  assertEquals(403,call("GET","/admin/status-history",null,officer).statusCode());
+  long started=System.nanoTime();
+  assertEquals("{\"status\":\"NO_REQUERIDO\"}",call("GET","/citizens/9000000011/status",null,officer).body());
+  assertTrue(System.nanoTime()-started <= 5_000_000_000L,"Consulta tardó más de cinco segundos");
+  assertTrue(call("GET","/history",null,officer).body().contains("9000000011"));
+  var changes=call("GET","/admin/status-history",null,admin);
+  assertEquals(200,changes.statusCode());
+  assertTrue(changes.body().contains("9000000011"));
+  assertTrue(changes.body().contains("\"previousRequired\":true"));
+  assertTrue(changes.body().contains("\"newRequired\":false"));
   assertEquals(200,call("POST","/auth/change-password","{\"oldPassword\":\"Officer12345\",\"newPassword\":\"Updated12345\"}",officer).statusCode());
   assertEquals(401,call("GET","/auth/me",null,officer).statusCode());
   officer=login(o.id,"Updated12345");

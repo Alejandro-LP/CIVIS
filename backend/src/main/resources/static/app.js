@@ -12,6 +12,7 @@ const views = {
   officers: ['Funcionarios', 'Controla el acceso y los permisos del personal registrado.'],
   registry: ['Autorizaciones', 'Autoriza los datos institucionales antes del registro en la app móvil.'],
   audit: ['Auditoría', 'Consulta quién verificó cada documento y cuándo lo hizo.'],
+  'status-history': ['Historial de estados', 'Consulta los cambios de antecedentes, su autor y fecha.'],
   reports: ['Reportes PDF', 'Genera el listado de ciudadanos según su estado.']
 };
 const escapeHtml = (value) => String(value ?? '').replace(/[&<>"']/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[char]);
@@ -123,8 +124,8 @@ async function navigate(view) {
         <section class="panel"><h2>Preparar una verificación</h2><p class="muted">Registra el ciudadano con sus datos completos. Autoriza al funcionario con su fuerza, rango e identificación institucional. El funcionario recibe su contraseña por correo al registrarse y puede consultar desde Android.</p></section>`;
     } else if (view === 'reports') {
       $('#view-body').innerHTML = `<section class="panel report-options"><h2>Reporte de ciudadanos</h2><p class="muted">El documento incluye identificación, nombres, apellidos y estado. Selecciona el filtro antes de descargar.</p><label>Estado del ciudadano<select id="report-filter"><option value="">Todos los ciudadanos</option><option value="true">Requeridos</option><option value="false">No requeridos</option></select></label><button class="primary" id="download-report">Descargar PDF</button><p id="report-status" class="small" role="status"></p></section>`;
-    } else if (view === 'audit') {
-      const result = await request(`/admin/audit?page=${state.page}&size=20`);
+    } else if (view === 'audit' || view === 'status-history') {
+      const result = await request(`/admin/${view}?page=${state.page}&size=20`);
       if (state.token !== sessionToken) return;
       state.rows = result.content;
       state.totalPages = result.totalPages;
@@ -155,13 +156,15 @@ function renderRows() {
     citizens: ['Ciudadano', 'Documento', 'Estado', 'Acciones'],
     officers: ['Funcionario', 'Fuerza y rango', 'Correo', 'Permisos', 'Estado', 'Acciones'],
     registry: ['Documento', 'Fuerza y rango', 'ID institucional', 'Correo', 'Estado', 'Acciones'],
-    audit: ['Fecha y hora', 'Funcionario', 'Documento consultado', 'Resultado']
+    audit: ['Fecha y hora', 'Funcionario', 'Documento consultado', 'Resultado'],
+    'status-history': ['Fecha y hora', 'Administrador', 'Documento', 'Estado anterior', 'Estado nuevo']
   }[view];
   let toolbar = '';
-  if (view !== 'audit') {
+  const paginated = view === 'audit' || view === 'status-history';
+  if (!paginated) {
     toolbar = `<div class="toolbar"><input id="search" aria-label="Buscar por documento o nombre" placeholder="Buscar por documento o nombre…">${view === 'citizens' ? '<select id="status-filter" aria-label="Filtrar por estado"><option value="">Todos los estados</option><option value="true">Requeridos</option><option value="false">No requeridos</option></select>' : ''}${view === 'officers' ? '' : `<button class="primary" id="create-record">${view === 'citizens' ? 'Nuevo ciudadano' : 'Nueva autorización'}</button>`}</div>`;
   }
-  $('#view-body').innerHTML = `${toolbar}<div class="table-wrap"><table><thead><tr>${columns.map((name) => `<th scope="col">${name}</th>`).join('')}</tr></thead><tbody id="rows"></tbody></table></div>${view === 'audit' ? `<div class="pagination"><button id="previous-page" class="secondary" ${state.page === 0 ? 'disabled' : ''}>Anterior</button><span>Página ${state.page + 1} de ${Math.max(1, state.totalPages)}</span><button id="next-page" class="secondary" ${state.page + 1 >= state.totalPages ? 'disabled' : ''}>Siguiente</button></div>` : ''}`;
+  $('#view-body').innerHTML = `${toolbar}<div class="table-wrap"><table><thead><tr>${columns.map((name) => `<th scope="col">${name}</th>`).join('')}</tr></thead><tbody id="rows"></tbody></table></div>${paginated ? `<div class="pagination"><button id="previous-page" class="secondary" ${state.page === 0 ? 'disabled' : ''}>Anterior</button><span>Página ${state.page + 1} de ${Math.max(1, state.totalPages)}</span><button id="next-page" class="secondary" ${state.page + 1 >= state.totalPages ? 'disabled' : ''}>Siguiente</button></div>` : ''}`;
   filterRows();
 }
 
@@ -172,7 +175,7 @@ function filterRows() {
     const text = `${row.identification} ${row.firstName || ''} ${row.lastName || ''} ${row.email || ''}`.toLocaleLowerCase('es');
     return text.includes(query) && (status === '' || String(row.required) === status);
   });
-  $('#rows').innerHTML = rows.length ? rows.map(renderRow).join('') : `<tr><td class="empty" colspan="${state.view === 'citizens' || state.view === 'audit' ? 4 : 6}">No hay registros para mostrar.</td></tr>`;
+  $('#rows').innerHTML = rows.length ? rows.map(renderRow).join('') : `<tr><td class="empty" colspan="${state.view === 'status-history' ? 5 : state.view === 'citizens' || state.view === 'audit' ? 4 : 6}">No hay registros para mostrar.</td></tr>`;
 }
 
 function renderRow(row) {
@@ -186,6 +189,8 @@ function renderRow(row) {
     cells = [`<strong>${person}</strong><span class="small">${id}</span>`, `${escapeHtml(row.force)}<span class="small">${escapeHtml(row.rank)}</span>`, escapeHtml(row.email), badge(row.role === 'ADMIN' ? 'Administrador' : 'Funcionario', 'gray'), badge(row.active ? 'Activo' : 'Inactivo', row.active ? '' : 'red'), row.identification === state.actor.identification ? '<span class="small muted">Tu cuenta</span>' : edit];
   } else if (state.view === 'registry') {
     cells = [id, `${escapeHtml(row.force)}<span class="small">${escapeHtml(row.rank)}</span>`, escapeHtml(row.forceId), escapeHtml(row.email), badge(row.active ? 'Autorizado' : 'Suspendido', row.active ? '' : 'red'), edit];
+  } else if (state.view === 'status-history') {
+    cells = [escapeHtml(new Date(row.occurredAt).toLocaleString('es-CO')), escapeHtml(row.officerId), escapeHtml(row.citizenId), badge(row.previousRequired ? 'Requerido' : 'No requerido', row.previousRequired ? 'red' : ''), badge(row.newRequired ? 'Requerido' : 'No requerido', row.newRequired ? 'red' : '')];
   } else {
     cells = [escapeHtml(new Date(row.occurredAt).toLocaleString('es-CO')), escapeHtml(row.officerId), escapeHtml(row.citizenId), badge(row.outcome.replaceAll('_', ' '), row.outcome === 'REQUERIDO' ? 'red' : '')];
   }
@@ -327,8 +332,8 @@ document.addEventListener('click', (event) => {
   }
   if (button.id === 'close-editor' || button.id === 'cancel-editor') $('#editor').close();
   if (button.id === 'cancel-delete') $('#confirmation').close();
-  if (button.id === 'previous-page') { state.page--; navigate('audit'); }
-  if (button.id === 'next-page') { state.page++; navigate('audit'); }
+  if (button.id === 'previous-page') { state.page--; navigate(state.view); }
+  if (button.id === 'next-page') { state.page++; navigate(state.view); }
   if (button.id === 'download-report') downloadReport(button);
 });
 document.addEventListener('input', (event) => { if (event.target.id === 'search') filterRows(); });

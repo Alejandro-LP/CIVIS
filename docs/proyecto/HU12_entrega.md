@@ -19,6 +19,8 @@ HTTP local es exclusivo del laboratorio. HTTPS con certificado válido es requis
 
 ## Prototipo funcional de baja fidelidad
 
+![Wireframes web y móvil HU12](prototipos_hu12.svg)
+
 | Pantalla web | Pantalla móvil |
 |---|---|
 | Login → Ciudadanos → Buscar → Ficha → cambiar estado → Guardar | Login → Consulta → Digitar o escanear → Confirmar → Consultar |
@@ -63,7 +65,7 @@ erDiagram
 
 ## Ejecución y resultados
 
-La evidencia histórica del 17 de noviembre consta en `verificacion.json` y `verificacion_android.json`; no certifica este cambio. Los casos CP01–CP04 se codificaron en `ApplicationFlowTest.java`; falta ejecutar las pruebas del nuevo commit con JDK 26 y Maven. CP05–CP09 requieren confirmación y evidencias actualizadas. No se declaran aprobados sin ejecución.
+La evidencia histórica del 17 de noviembre consta en `verificacion.json` y `verificacion_android.json`; no certifica este cambio. CP01–CP08 tienen comprobaciones REST automatizadas en `ApplicationFlowTest.java` (H2 de pruebas, no PostgreSQL). La validación de interfaz Android, PostgreSQL y HTTPS necesita ejecución en su entorno. El 19 de noviembre se intentó ejecutar Maven, pero no pudo resolver el repositorio de dependencias por DNS; no se ejecutaron casos JUnit. `node --check` sobre el portal y `git diff --check` son verificaciones estáticas, no pruebas funcionales. El flujo CI adjunta informes JUnit y APK/lint cuando finalice. No se declaran aprobados sin ejecución.
 
 ## Configuración y demostración
 
