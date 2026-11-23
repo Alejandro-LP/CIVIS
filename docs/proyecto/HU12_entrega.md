@@ -65,10 +65,14 @@ erDiagram
 
 ## Ejecución y resultados
 
-La evidencia histórica del 17 de noviembre consta en `verificacion.json` y `verificacion_android.json`; no certifica este cambio. CP01–CP08 tienen comprobaciones REST automatizadas en `ApplicationFlowTest.java` (H2 de pruebas, no PostgreSQL). La validación de interfaz Android, PostgreSQL y HTTPS necesita ejecución en su entorno. El 19 de noviembre se intentó ejecutar Maven, pero no pudo resolver el repositorio de dependencias por DNS; no se ejecutaron casos JUnit. `node --check` sobre el portal y `git diff --check` son verificaciones estáticas, no pruebas funcionales. El flujo CI adjunta informes JUnit y APK/lint cuando finalice. No se declaran aprobados sin ejecución.
+La evidencia histórica del 17 de noviembre consta en `verificacion.json` y `verificacion_android.json`; no certifica este cambio. CP01–CP08 tienen comprobaciones REST automatizadas en `ApplicationFlowTest.java` (H2 de pruebas, no PostgreSQL). GitHub Actions ya incluye pruebas automatizadas de Android y PostgreSQL 17; las evidencias físicas de interfaz, el lector PDF417 y HTTPS externo siguen pendientes. El 19 de noviembre se intentó ejecutar Maven, pero no pudo resolver el repositorio de dependencias por DNS; no se ejecutaron casos JUnit. `node --check` sobre el portal y `git diff --check` son verificaciones estáticas, no pruebas funcionales. El flujo CI adjunta informes JUnit y APK/lint cuando finalice. No se declaran aprobados sin ejecución.
 
 ## Configuración y demostración
 
 Rama `fix/hu12-entrega-academica`, base `main`. Revisar mediante pull request antes de integrar. No versionar contraseñas ni datos reales. Ejecutar `mvn test` en backend y `./gradlew :app:assembleDebug :app:lintDebug` en Android; iniciar el laboratorio según README. Usar datos ficticios. Cambiar estado en web, consultar el mismo documento desde Android y revisar bitácora e historial. No confundir el laboratorio con despliegue HTTPS.
 
 El alcance de esta rama es HU12 y dependencias inmediatas, no el cierre de las 14 historias oficiales.
+
+## Contrato complementario HU3 (PR #5)
+
+La nueva alta es `POST /api/admin/citizens` con los diez datos obligatorios: documento, nombres, apellidos, fechas y lugares de nacimiento y expedición, RH, grupo sanguíneo y estatura. Devuelve 201 y fuerza NO_REQUERIDO; un duplicado devuelve 409. La edición se realiza con `PUT /api/admin/citizens/{id}` y registra cambios de estado. El historial de altas está en `GET /api/admin/citizen-registrations`, persistido en `citizen_registration_audit`. Bases ya inicializadas deben aplicar `database/04_registration_audit.sql` antes de iniciar con `DDL_AUTO=validate`. La CI del PR #5 y las capturas físicas deben anexarse como resultados verificables, no simulados.

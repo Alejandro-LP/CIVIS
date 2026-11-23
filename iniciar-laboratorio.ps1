@@ -10,6 +10,10 @@ Push-Location $PSScriptRoot
 try {
     & docker compose up -d --wait
     if ($LASTEXITCODE -ne 0) { throw 'Docker no pudo iniciar PostgreSQL y Mailpit. Revisa Docker Desktop y los puertos configurados.' }
+    # Aplica migración idempotente de auditoría HU3 también en volúmenes preexistentes.
+    Get-Content -Raw (Join-Path $PSScriptRoot 'database/04_registration_audit.sql') |
+        & docker compose exec -T postgres psql -v ON_ERROR_STOP=1 -U civis -d civis
+    if ($LASTEXITCODE -ne 0) { throw 'No se pudo aplicar la migración HU3 en PostgreSQL.' }
     $databasePort = if ($env:DB_PORT) { $env:DB_PORT } else { '5433' }
     $env:DB_URL = "jdbc:postgresql://localhost:$databasePort/civis"
     $env:DB_USER = 'civis'

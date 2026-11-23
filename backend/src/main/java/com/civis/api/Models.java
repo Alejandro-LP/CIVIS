@@ -50,3 +50,11 @@ class StatusHistory {
  Instant occurredAt;
  protected StatusHistory() {}
 }
+
+@Entity @Table(name="citizen_registration_audit")
+class CitizenRegistrationAudit {
+ @Id @GeneratedValue(strategy=GenerationType.IDENTITY) Long id;
+ String officerId, citizenId;
+ Instant occurredAt;
+ protected CitizenRegistrationAudit() {}
+}

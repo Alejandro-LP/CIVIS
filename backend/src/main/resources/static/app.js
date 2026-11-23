@@ -12,6 +12,7 @@ const views = {
   officers: ['Funcionarios', 'Controla el acceso y los permisos del personal registrado.'],
   registry: ['Autorizaciones', 'Autoriza los datos institucionales antes del registro en la app móvil.'],
   audit: ['Auditoría', 'Consulta quién verificó cada documento y cuándo lo hizo.'],
+  'citizen-registrations': ['Altas ciudadanas', 'Fecha, documento y administrador que registró cada ficha.'],
   'status-history': ['Historial de estados', 'Consulta los cambios de antecedentes, su autor y fecha.'],
   reports: ['Reportes PDF', 'Genera el listado de ciudadanos según su estado.']
 };
@@ -124,7 +125,7 @@ async function navigate(view) {
         <section class="panel"><h2>Preparar una verificación</h2><p class="muted">Registra el ciudadano con sus datos completos. Autoriza al funcionario con su fuerza, rango e identificación institucional. El funcionario recibe su contraseña por correo al registrarse y puede consultar desde Android.</p></section>`;
     } else if (view === 'reports') {
       $('#view-body').innerHTML = `<section class="panel report-options"><h2>Reporte de ciudadanos</h2><p class="muted">El documento incluye identificación, nombres, apellidos y estado. Selecciona el filtro antes de descargar.</p><label>Estado del ciudadano<select id="report-filter"><option value="">Todos los ciudadanos</option><option value="true">Requeridos</option><option value="false">No requeridos</option></select></label><button class="primary" id="download-report">Descargar PDF</button><p id="report-status" class="small" role="status"></p></section>`;
-    } else if (view === 'audit' || view === 'status-history') {
+    } else if (view === 'audit' || view === 'status-history' || view === 'citizen-registrations') {
       const result = await request(`/admin/${view}?page=${state.page}&size=20`);
       if (state.token !== sessionToken) return;
       state.rows = result.content;
@@ -157,10 +158,11 @@ function renderRows() {
     officers: ['Funcionario', 'Fuerza y rango', 'Correo', 'Permisos', 'Estado', 'Acciones'],
     registry: ['Documento', 'Fuerza y rango', 'ID institucional', 'Correo', 'Estado', 'Acciones'],
     audit: ['Fecha y hora', 'Funcionario', 'Documento consultado', 'Resultado'],
-    'status-history': ['Fecha y hora', 'Administrador', 'Documento', 'Estado anterior', 'Estado nuevo']
+    'status-history': ['Fecha y hora', 'Administrador', 'Documento', 'Estado anterior', 'Estado nuevo'],
+    'citizen-registrations': ['Fecha y hora', 'Administrador', 'Documento registrado']
   }[view];
   let toolbar = '';
-  const paginated = view === 'audit' || view === 'status-history';
+  const paginated = view === 'audit' || view === 'status-history' || view === 'citizen-registrations';
   if (!paginated) {
     toolbar = `<div class="toolbar"><input id="search" aria-label="Buscar por documento o nombre" placeholder="Buscar por documento o nombre…">${view === 'citizens' ? '<select id="status-filter" aria-label="Filtrar por estado"><option value="">Todos los estados</option><option value="true">Requeridos</option><option value="false">No requeridos</option></select>' : ''}${view === 'officers' ? '' : `<button class="primary" id="create-record">${view === 'citizens' ? 'Nuevo ciudadano' : 'Nueva autorización'}</button>`}</div>`;
   }
@@ -175,7 +177,7 @@ function filterRows() {
     const text = `${row.identification} ${row.firstName || ''} ${row.lastName || ''} ${row.email || ''}`.toLocaleLowerCase('es');
     return text.includes(query) && (status === '' || String(row.required) === status);
   });
-  $('#rows').innerHTML = rows.length ? rows.map(renderRow).join('') : `<tr><td class="empty" colspan="${state.view === 'status-history' ? 5 : state.view === 'citizens' || state.view === 'audit' ? 4 : 6}">No hay registros para mostrar.</td></tr>`;
+  $('#rows').innerHTML = rows.length ? rows.map(renderRow).join('') : `<tr><td class="empty" colspan="${state.view === 'status-history' ? 5 : state.view === 'citizen-registrations' ? 3 : state.view === 'citizens' || state.view === 'audit' ? 4 : 6}">No hay registros para mostrar.</td></tr>`;
 }
 
 function renderRow(row) {
@@ -189,6 +191,8 @@ function renderRow(row) {
     cells = [`<strong>${person}</strong><span class="small">${id}</span>`, `${escapeHtml(row.force)}<span class="small">${escapeHtml(row.rank)}</span>`, escapeHtml(row.email), badge(row.role === 'ADMIN' ? 'Administrador' : 'Funcionario', 'gray'), badge(row.active ? 'Activo' : 'Inactivo', row.active ? '' : 'red'), row.identification === state.actor.identification ? '<span class="small muted">Tu cuenta</span>' : edit];
   } else if (state.view === 'registry') {
     cells = [id, `${escapeHtml(row.force)}<span class="small">${escapeHtml(row.rank)}</span>`, escapeHtml(row.forceId), escapeHtml(row.email), badge(row.active ? 'Autorizado' : 'Suspendido', row.active ? '' : 'red'), edit];
+  } else if (state.view === 'citizen-registrations') {
+    cells = [escapeHtml(new Date(row.occurredAt).toLocaleString('es-CO')),escapeHtml(row.officerId),escapeHtml(row.citizenId)];
   } else if (state.view === 'status-history') {
     cells = [escapeHtml(new Date(row.occurredAt).toLocaleString('es-CO')), escapeHtml(row.officerId), escapeHtml(row.citizenId), badge(row.previousRequired ? 'Requerido' : 'No requerido', row.previousRequired ? 'red' : ''), badge(row.newRequired ? 'Requerido' : 'No requerido', row.newRequired ? 'red' : '')];
   } else {
@@ -223,14 +227,15 @@ function openEditor(id) {
       const today = new Date().toLocaleDateString('en-CA');
       fields += input('firstName', 'Nombres', row.firstName, 'required maxlength="100" placeholder="Ej. Laura"');
       fields += input('lastName', 'Apellidos', row.lastName, 'required maxlength="100" placeholder="Ej. Cárdenas"');
-      fields += input('birthDate', 'Fecha de nacimiento', row.birthDate, `type="date" max="${today}"`);
-      fields += input('birthPlace', 'Lugar de nacimiento', row.birthPlace, 'maxlength="150" placeholder="Ej. Bogotá"');
-      fields += input('issueDate', 'Fecha de expedición', row.issueDate, `type="date" max="${today}"`);
-      fields += input('issuePlace', 'Lugar de expedición', row.issuePlace, 'maxlength="150" placeholder="Ej. Bogotá"');
-      fields += select('rh', 'RH', [['', 'Seleccionar'], '+', '-'], row.rh);
-      fields += select('bloodGroup', 'Grupo sanguíneo', [['', 'Seleccionar'], 'A', 'B', 'AB', 'O'], row.bloodGroup);
-      fields += input('heightCm', 'Estatura en centímetros', row.heightCm, 'type="number" min="40" max="250" placeholder="Ej. 164"');
-      fields += select('required', 'Estado registrado', [['false', 'No requerido'], ['true', 'Requerido']], row.required ?? false);
+      fields += input('birthDate', 'Fecha de nacimiento', row.birthDate, `required type="date" max="${today}"`);
+      fields += input('birthPlace', 'Lugar de nacimiento', row.birthPlace, 'required maxlength="150" placeholder="Ej. Bogotá"');
+      fields += input('issueDate', 'Fecha de expedición', row.issueDate, `required type="date" max="${today}"`);
+      fields += input('issuePlace', 'Lugar de expedición', row.issuePlace, 'required maxlength="150" placeholder="Ej. Bogotá"');
+      fields += select('rh', 'RH', [['', 'Seleccionar'], '+', '-'], row.rh, true);
+      fields += select('bloodGroup', 'Grupo sanguíneo', [['', 'Seleccionar'], 'A', 'B', 'AB', 'O'], row.bloodGroup, true);
+      fields += input('heightCm', 'Estatura en centímetros', row.heightCm, 'required type="number" min="40" max="250" placeholder="Ej. 164"');
+      if (editing) fields += select('required', 'Estado registrado', [['false', 'No requerido'], ['true', 'Requerido']], row.required ?? false);
+      else fields += '<p class="small muted wide">Estado inicial asignado por el servidor: No requerido.</p>';
     } else {
       fields += select('force', 'Fuerza pública', [['', 'Seleccionar'], ...Object.keys(ranks)], row.force, true);
       const rankOptions = ranks[row.force] || [];
@@ -265,12 +270,13 @@ $('#editor-form').addEventListener('submit', async (event) => {
       for (const key of ['birthDate', 'birthPlace', 'issueDate', 'issuePlace', 'rh', 'bloodGroup']) data[key] ||= null;
       data.heightCm = data.heightCm ? Number(data.heightCm) : null;
       data.required = data.required === 'true';
-      if (data.birthDate && data.issueDate && data.issueDate < data.birthDate) throw new Error('La expedición debe ser posterior o igual al nacimiento.');
+      if (!data.birthDate || !data.issueDate || data.issueDate <= data.birthDate) throw new Error('La expedición debe ser posterior al nacimiento.');
     } else {
       data.active = data.active === 'true';
     }
-    const path = view === 'officers' ? `/admin/officers/${encodeURIComponent(editing.identification)}` : `/admin/${view}`;
-    await request(path, { method: view === 'officers' ? 'PATCH' : 'POST', body: JSON.stringify(data) });
+    const path = view === 'officers' ? `/admin/officers/${encodeURIComponent(editing.identification)}` : view === 'citizens' && editing ? `/admin/citizens/${encodeURIComponent(editing.identification)}` : `/admin/${view}`;
+    const method = view === 'officers' ? 'PATCH' : view === 'citizens' && editing ? 'PUT' : 'POST';
+    await request(path, { method, body: JSON.stringify(data) });
     $('#editor').close();
     await navigate(view);
     message('Cambios guardados correctamente.');
