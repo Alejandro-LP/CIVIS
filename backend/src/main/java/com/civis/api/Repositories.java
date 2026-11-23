@@ -14,3 +14,5 @@ interface AuthSessionRepository extends JpaRepository<AuthSession,String> {
 interface LookupAuditRepository extends JpaRepository<LookupAudit,Long> {
  org.springframework.data.domain.Page<LookupAudit> findByOfficerId(String officerId,org.springframework.data.domain.Pageable pageable);
 }
+
+interface CitizenRegistrationAuditRepository extends JpaRepository<CitizenRegistrationAudit,Long> {}
