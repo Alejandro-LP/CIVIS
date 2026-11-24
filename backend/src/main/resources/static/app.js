@@ -1,5 +1,5 @@
 const $ = (selector) => document.querySelector(selector);
-const state = { token: '', actor: null, view: 'summary', rows: [], page: 0, totalPages: 0, busy: false };
+const state = { token: '', actor: null, view: 'summary', rows: [], page: 0, totalPages: 0, listPage: 0, busy: false };
 const ranks = {
   'Policía': ['Patrullero', 'Subintendente', 'Intendente', 'Subcomisario', 'Comisario', 'Subteniente', 'Teniente', 'Capitán', 'Mayor', 'Teniente coronel', 'Coronel', 'General'],
   'Ejército': ['Soldado', 'Cabo', 'Sargento', 'Subteniente', 'Teniente', 'Capitán', 'Mayor', 'Teniente coronel', 'Coronel', 'General'],
@@ -166,7 +166,7 @@ function renderRows() {
   if (!paginated) {
     toolbar = `<div class="toolbar"><input id="search" aria-label="Buscar por documento o nombre" placeholder="Buscar por documento o nombre…">${view === 'citizens' ? '<select id="status-filter" aria-label="Filtrar por estado"><option value="">Todos los estados</option><option value="true">Requeridos</option><option value="false">No requeridos</option></select>' : ''}${view === 'officers' ? '' : `<button class="primary" id="create-record">${view === 'citizens' ? 'Nuevo ciudadano' : 'Nueva autorización'}</button>`}</div>`;
   }
-  $('#view-body').innerHTML = `${toolbar}<div class="table-wrap"><table><thead><tr>${columns.map((name) => `<th scope="col">${name}</th>`).join('')}</tr></thead><tbody id="rows"></tbody></table></div>${paginated ? `<div class="pagination"><button id="previous-page" class="secondary" ${state.page === 0 ? 'disabled' : ''}>Anterior</button><span>Página ${state.page + 1} de ${Math.max(1, state.totalPages)}</span><button id="next-page" class="secondary" ${state.page + 1 >= state.totalPages ? 'disabled' : ''}>Siguiente</button></div>` : ''}`;
+  $('#view-body').innerHTML = `${toolbar}<div class="table-wrap"><table><thead><tr>${columns.map((name) => `<th scope="col">${name}</th>`).join('')}</tr></thead><tbody id="rows"></tbody></table></div>${!paginated ? `<div class="pagination"><button id="previous-list-page" class="secondary">Anterior</button><span id="list-page-label" role="status"></span><button id="next-list-page" class="secondary">Siguiente</button></div>` : ""}${paginated ? `<div class="pagination"><button id="previous-page" class="secondary" ${state.page === 0 ? 'disabled' : ''}>Anterior</button><span>Página ${state.page + 1} de ${Math.max(1, state.totalPages)}</span><button id="next-page" class="secondary" ${state.page + 1 >= state.totalPages ? 'disabled' : ''}>Siguiente</button></div>` : ''}`;
   filterRows();
 }
 
@@ -177,7 +177,17 @@ function filterRows() {
     const text = `${row.identification} ${row.firstName || ''} ${row.lastName || ''} ${row.email || ''}`.toLocaleLowerCase('es');
     return text.includes(query) && (status === '' || String(row.required) === status);
   });
-  $('#rows').innerHTML = rows.length ? rows.map(renderRow).join('') : `<tr><td class="empty" colspan="${state.view === 'status-history' ? 5 : state.view === 'citizen-registrations' ? 3 : state.view === 'citizens' || state.view === 'audit' ? 4 : 6}">No hay registros para mostrar.</td></tr>`;
+  const pageSize = 20;
+  const pages = Math.max(1, Math.ceil(rows.length / pageSize));
+  state.listPage = Math.min(state.listPage, pages - 1);
+  const visibleRows = rows.slice(state.listPage * pageSize, (state.listPage + 1) * pageSize);
+  const label = $('#list-page-label');
+  if (label) {
+    label.textContent = `Página ${state.listPage + 1} de ${pages} · ${rows.length} registros`;
+    $('#previous-list-page').disabled = state.listPage === 0;
+    $('#next-list-page').disabled = state.listPage + 1 >= pages;
+  }
+  $('#rows').innerHTML = visibleRows.length ? visibleRows.map(renderRow).join('') : `<tr><td class="empty" colspan="${state.view === 'status-history' ? 5 : state.view === 'citizen-registrations' ? 3 : state.view === 'citizens' || state.view === 'audit' ? 4 : 6}">No hay registros para mostrar.</td></tr>`;
 }
 
 function renderRow(row) {
@@ -338,10 +348,12 @@ document.addEventListener('click', (event) => {
   }
   if (button.id === 'close-editor' || button.id === 'cancel-editor') $('#editor').close();
   if (button.id === 'cancel-delete') $('#confirmation').close();
+  if (button.id === 'previous-list-page') { state.listPage = Math.max(0, state.listPage - 1); filterRows(); }
+  if (button.id === 'next-list-page') { state.listPage++; filterRows(); }
   if (button.id === 'previous-page') { state.page--; navigate(state.view); }
   if (button.id === 'next-page') { state.page++; navigate(state.view); }
   if (button.id === 'download-report') downloadReport(button);
 });
-document.addEventListener('input', (event) => { if (event.target.id === 'search') filterRows(); });
-document.addEventListener('change', (event) => { if (event.target.id === 'status-filter') filterRows(); });
+document.addEventListener('input', (event) => { if (event.target.id === 'search') { state.listPage = 0; filterRows(); } });
+document.addEventListener('change', (event) => { if (event.target.id === 'status-filter') { state.listPage = 0; filterRows(); } });
 request('/health').then((health) => { $('#lab-login').hidden = !health.demo; }).catch(() => {});

@@ -163,7 +163,17 @@ class MainActivity : ComponentActivity() {
                         scannerError = ""
                         val options = GmsBarcodeScannerOptions.Builder().setBarcodeFormats(Barcode.FORMAT_PDF417, Barcode.FORMAT_QR_CODE, Barcode.FORMAT_CODE_128).enableAutoZoom().build()
                         GmsBarcodeScanning.getClient(this, options).startScan()
-                            .addOnSuccessListener { barcode -> scannedValue = barcode.rawValue.orEmpty(); page = "consult" }
+                            .addOnSuccessListener { barcode ->
+                                // No mostramos ni almacenamos la carga íntegra de documentos QR.
+                                // Un QR cifrado no puede tratarse como identificación.
+                                val raw = barcode.rawValue.orEmpty().trim()
+                                scannedValue = if (raw.matches(Regex("[0-9]{6,12}"))) raw else ""
+                                if (scannedValue.isBlank()) {
+                                    scannerError = "Código detectado, pero no contiene un número de identificación simple y verificable. Utiliza la consulta manual."
+                                } else {
+                                    page = "consult"
+                                }
+                            }
                             .addOnFailureListener { scannerError = "Escáner no disponible. Usa la consulta manual." }
                     }, onConsult = { scannedValue = ""; alert = ""; page = "consult" }, onProfile = { page = "profile" }, scannerError = scannerError,
                     onManage={page="manage"},onHistory={page="history"},onPassword={page="password"})
@@ -543,7 +553,7 @@ private fun Screen(
     ) }
     Screen("Consultar ciudadano", "Introduce y confirma la identificación antes de consultar.", onBack) {
         if (scanned.isNotBlank()) {
-            Hint("Código leído: ${scanned.take(90)}${if (scanned.length > 90) "…" else ""}. Comprueba el número de cédula: PDF417 puede contener más datos.")
+            Hint("Código reconocido. Confirma el número de identificación antes de consultar. La aplicación no muestra el contenido completo del código.")
         }
         MinimalCard {
             Field("Número de identificación", id,
