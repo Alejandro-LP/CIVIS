@@ -137,3 +137,15 @@ Se aprobaron 27 casos contra PostgreSQL 18 aislado y un receptor SMTP local, inc
 La consulta institucional se representa mediante el padrón académico `defense_registry`. La guía permite documentar supuestos, cuya aceptación corresponde al profesor. El ensayo de cámara con una cédula física permanece pendiente. Docker Compose propone PostgreSQL 17 y Mailpit, mientras que la verificación local utilizó PostgreSQL 18 y un receptor SMTP de pruebas.
 
 Los estados proceden del registro ficticio o interno de CIVIS. Una integración institucional requiere proveedor autorizado, credenciales, HTTPS y políticas operativas. Para uso interno sin datos ficticios, utiliza una base separada, omite el perfil de laboratorio y configura `CIVIS_ADMIN_ID`, `CIVIS_ADMIN_EMAIL` y `CIVIS_ADMIN_PASSWORD`.
+
+### Sesiones JWT y HTTPS
+
+El perfil `tls` activa HTTPS directo en el backend. Configura `TLS_KEY_STORE`
+con la ruta del archivo PKCS#12, `TLS_KEY_STORE_PASSWORD` con su contraseña y
+`CIVIS_JWT_KEY` con una clave aleatoria de al menos 32 bytes codificada en Base64.
+Activa el perfil mediante `SPRING_PROFILES_ACTIVE=tls`.
+
+Usa la misma clave JWT en todas las instancias para conservar las sesiones
+durante un reinicio. En laboratorio sin clave configurada, cada inicio genera
+una clave temporal. Las sesiones opacas ya emitidas conservan su expiración
+original. El backend sigue aplicando expiración y revocación en la base de datos.

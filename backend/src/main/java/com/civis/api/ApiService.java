@@ -12,7 +12,7 @@ import java.security.MessageDigest;
 import java.security.SecureRandom;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
-import java.util.Base64;
+
 import java.util.HexFormat;
 import java.nio.charset.StandardCharsets;
 
@@ -22,12 +22,13 @@ class ApiService {
  private final DefenseRecordRepository registry;
  private final AuthSessionRepository sessions;
  private final JavaMailSender mail;
+ private final SessionJwt jwt;
  private final BCryptPasswordEncoder encoder = new BCryptPasswordEncoder(12);
  private final SecureRandom secure = new SecureRandom();
  @Value("${civis.mail-from}") String from;
  @Value("${civis.token-hours:8}") long tokenHours;
  @Value("${civis.demo-mode:false}") boolean demo;
- ApiService(OfficerRepository officers,DefenseRecordRepository registry,AuthSessionRepository sessions,JavaMailSender mail){this.officers=officers;this.registry=registry;this.sessions=sessions;this.mail=mail;}
+ ApiService(OfficerRepository officers,DefenseRecordRepository registry,AuthSessionRepository sessions,JavaMailSender mail,SessionJwt jwt){this.officers=officers;this.registry=registry;this.sessions=sessions;this.mail=mail;this.jwt=jwt;}
  static String hash(String s){try {return HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(s.getBytes(StandardCharsets.UTF_8)));}catch(Exception e){throw new IllegalStateException(e);}}
  String newPassword(){
    String up="ABCDEFGHJKLMNPQRSTUVWXYZ", low="abcdefghjkmnpqrstuvwxyz", digits="23456789", all=up+low+digits;
@@ -50,13 +51,22 @@ class ApiService {
  ApiController.LoginResponse login(ApiController.Login r){
    Officer o=officers.findById(r.identification()).orElse(null);
    if(o==null || !o.active || !encoder.matches(r.password(),o.passwordHash))throw new ResponseStatusException(HttpStatus.UNAUTHORIZED,"Credenciales inválidas");
-   byte[] b=new byte[32];secure.nextBytes(b);String token=Base64.getUrlEncoder().withoutPadding().encodeToString(b);
-   AuthSession s=new AuthSession();s.tokenHash=hash(token);s.officer=o;s.expiresAt=Instant.now().plus(tokenHours,ChronoUnit.HOURS);sessions.save(s);
+   Instant issued=Instant.now().truncatedTo(ChronoUnit.SECONDS);
+   Instant expires=issued.plus(tokenHours,ChronoUnit.HOURS);
+   String token=jwt.issue(issued,expires);
+   AuthSession s=new AuthSession();s.tokenHash=hash(token);s.officer=o;s.expiresAt=expires;sessions.save(s);
    return new ApiController.LoginResponse(token,new ApiController.OfficerView(o.id,o.firstName,o.lastName,o.forceName,o.rankName,o.forceId,o.email,o.role),demo);
  }
  Officer require(String authorization){
    if(authorization==null || !authorization.startsWith("Bearer "))throw new ResponseStatusException(HttpStatus.UNAUTHORIZED,"Inicia sesión");
-   AuthSession s=sessions.findById(hash(authorization.substring(7))).orElseThrow(()->new ResponseStatusException(HttpStatus.UNAUTHORIZED,"Sesión no válida"));
+   String token=authorization.substring(7);
+   // Las sesiones anteriores conservan su vigencia original durante la migración.
+   boolean legacy=token.matches("[A-Za-z0-9_-]{43}");
+   if(!legacy && !jwt.isSignedByCivis(token)) {
+    throw new ResponseStatusException(HttpStatus.UNAUTHORIZED,"Sesión no válida");
+   }
+   // El hash vincula el JWT completo a la sesión emitida; la BD controla expiración y revocación.
+   AuthSession s=sessions.findById(hash(token)).orElseThrow(()->new ResponseStatusException(HttpStatus.UNAUTHORIZED,"Sesión no válida"));
    if(s.expiresAt.isBefore(Instant.now()) || !s.officer.active)throw new ResponseStatusException(HttpStatus.UNAUTHORIZED,"Sesión expirada");
    return s.officer;
  }
